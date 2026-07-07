@@ -497,6 +497,51 @@
         ::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.7); }
 
         /* ── Print ── */
+        /* ══════════ Mobile Responsive ══════════ */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .navbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; border-radius: 14px; }
+            .logo { font-size: 17px; }
+            .back-btn { padding: 8px 16px; font-size: 13px; }
+            .firebase-bar { padding: 9px 13px; font-size: 11.5px; flex-wrap: wrap; }
+            .main-content { padding: 16px; border-radius: 14px; }
+            .page-header { margin-bottom: 18px; padding-bottom: 14px; }
+            .page-header h1 { font-size: 20px; }
+            .page-header > div { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+            .btn-primary, .add-student-btn, .print-btn { padding: 10px 14px; font-size: 13px; flex: 1; min-width: 120px; text-align: center; }
+
+            .stats-cards { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+            .stat-card { padding: 14px; border-radius: 12px; }
+            .stat-card .number { font-size: 24px; }
+            .stat-card .label { font-size: 11.5px; }
+
+            .search-filter { grid-template-columns: 1fr; gap: 10px; margin-bottom: 16px; }
+            .search-filter input, .search-filter select { padding: 11px 12px; font-size: 13.5px; }
+
+            .students-table { min-width: 720px; }
+            .students-table th, .students-table td { padding: 10px 12px; font-size: 12.5px; }
+
+            .modal-content { width: 94%; margin: 3% auto; padding: 20px 16px; border-radius: 16px; }
+            .modal-header h2 { font-size: 18px; }
+            .form-row { grid-template-columns: 1fr; gap: 0; }
+            #subjectsCheckboxes { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
+            #subjectsCheckboxes label { font-size: 12px; padding: 6px 8px; }
+            .submit-btn { padding: 13px; font-size: 14.5px; }
+
+            .cards-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+            .cards-filter-select { width: 100%; }
+            .cards-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+
+            .action-btns { flex-wrap: wrap; }
+        }
+
+        @media (max-width: 420px) {
+            .stats-cards { grid-template-columns: 1fr 1fr; }
+            .page-header > div { flex-direction: column; }
+            .btn-primary, .add-student-btn, .print-btn { width: 100%; }
+            #subjectsCheckboxes { grid-template-columns: 1fr; }
+        }
+
         @media print {
             body * { visibility: hidden; }
             #cardsModal, #cardsModal * { visibility: visible; }
@@ -607,7 +652,7 @@
             </div>
 
             <!-- Table -->
-            <div id="studentsTableContainer">
+            <div id="studentsTableContainer" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
                 <table class="students-table">
                     <thead>
                         <tr>
@@ -998,10 +1043,10 @@ const firebaseConfig = {
 
             box.innerHTML = matches.map(s => `
                 <div onclick="document.getElementById('studentName').value='${s.name.replace(/'/g,"\\'")}'; renderNameSuggestions();"
-                     style="padding:10px 14px;cursor:pointer;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;gap:10px;"
+                     style="padding:10px 14px;cursor:pointer;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;gap:10px;color:#fff;"
                      onmouseover="this.style.background='rgba(168,85,247,.15)'" onmouseout="this.style.background='transparent'">
-                    <span>${s.name}</span>
-                    <span style="color:rgba(255,255,255,.4);font-size:11.5px;">${s.class}</span>
+                    <span style="color:#fff;">${s.name}</span>
+                    <span style="color:rgba(255,255,255,.45);font-size:11.5px;">${s.class}</span>
                 </div>
             `).join('');
             box.style.display = 'block';
