@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة سنتر المحكمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --purple-deep: #0d0014;
+            --purple-mid: #1a0030;
+            --purple-bright: #7c3aed;
+            --purple-glow: #a855f7;
+            --purple-light: #c084fc;
+            --blue-accent: #3b82f6;
+            --pink-accent: #ec4899;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--purple-deep);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .bg-gradient {
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124, 58, 237, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168, 85, 247, 0.25) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 40% at 20% 70%, rgba(59, 130, 246, 0.2) 0%, transparent 50%),
+                linear-gradient(180deg, #0d0014 0%, #12001f 40%, #0a0018 100%);
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: floatOrb 8s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(124, 58, 237, 0.3);
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(168, 85, 247, 0.2);
+            bottom: 10%;
+            right: -50px;
+            animation-delay: -3s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: rgba(59, 130, 246, 0.15);
+            bottom: 20%;
+            left: -30px;
+            animation-delay: -5s;
+        }
+
+        @keyframes floatOrb {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            33% { transform: translateY(-20px) translateX(10px); }
+            66% { transform: translateY(10px) translateX(-10px); }
+        }
+
+        /* Grid lines */
+        .grid-lines {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(124, 58, 237, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(124, 58, 237, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 40px 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        /* Logo badge */
+        .logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 50px;
+            padding: 10px 24px;
+            margin-bottom: 32px;
+            backdrop-filter: blur(10px);
+            animation: fadeSlideDown 0.8s ease both;
+        }
+
+        .logo-icon {
+            font-size: 22px;
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.8));
+        }
+
+        .logo-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--purple-light);
+            letter-spacing: 1px;
+        }
+
+        /* Spinner */
+        .spinner-wrapper {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 36px;
+            animation: fadeSlideDown 0.8s ease 0.2s both;
+        }
+
+        .spinner-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            animation: spinRing 1.8s linear infinite;
+        }
+
+        .spinner-ring-1 {
+            border-top-color: var(--purple-glow);
+            border-right-color: var(--purple-glow);
+            filter: drop-shadow(0 0 6px var(--purple-glow));
+        }
+
+        .spinner-ring-2 {
+            inset: 12px;
+            border-top-color: var(--purple-light);
+            animation-direction: reverse;
+            animation-duration: 1.2s;
+            opacity: 0.6;
+        }
+
+        .spinner-ring-3 {
+            inset: 24px;
+            border-top-color: var(--blue-accent);
+            animation-duration: 2.4s;
+            opacity: 0.4;
+        }
+
+        .spinner-core {
+            position: absolute;
+            inset: 32px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.8), rgba(124, 58, 237, 0.4));
+            border-radius: 50%;
+            filter: blur(2px);
+            animation: pulsCore 2s ease-in-out infinite;
+        }
+
+        @keyframes spinRing {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulsCore {
+            0%, 100% { opacity: 0.6; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* Main title */
+        .main-title {
+            font-size: clamp(28px, 7vw, 42px);
+            font-weight: 900;
+            line-height: 1.3;
+            color: var(--white);
+            margin-bottom: 14px;
+            animation: fadeSlideDown 0.8s ease 0.4s both;
+        }
+
+        .title-highlight {
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-glow), var(--blue-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+            display: block;
+        }
+
+        /* Subtitle */
+        .subtitle {
+            font-size: 15px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 40px;
+            animation: fadeSlideDown 0.8s ease 0.6s both;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto 20px;
+            animation: fadeSlideDown 0.8s ease 0.7s both;
+        }
+
+        .progress-track {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, var(--purple-bright), var(--purple-light), var(--blue-accent));
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+            animation: progressLoad 1.2s ease forwards;
+            width: 0%;
+        }
+
+        @keyframes progressLoad {
+            0% { width: 0%; }
+            60% { width: 70%; }
+            80% { width: 85%; }
+            100% { width: 100%; }
+        }
+
+        /* Loading text */
+        .loading-text {
+            font-size: 13px;
+            color: rgba(168, 85, 247, 0.8);
+            font-weight: 600;
+            animation: fadeSlideDown 0.8s ease 0.8s both, blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Particles */
+        .particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--purple-light);
+            animation: floatParticle linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-10vh) translateX(30px); opacity: 0; }
+        }
+
+        /* Glow lines */
+        .glow-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.5), transparent);
+            animation: scanLine 4s ease-in-out infinite;
+            left: 0;
+            right: 0;
+            opacity: 0;
+        }
+
+        .glow-line-1 { top: 30%; animation-delay: 0s; }
+        .glow-line-2 { top: 60%; animation-delay: 2s; }
+
+        @keyframes scanLine {
+            0% { opacity: 0; transform: scaleX(0); }
+            50% { opacity: 1; transform: scaleX(1); }
+            100% { opacity: 0; transform: scaleX(0); }
+        }
+
+        @keyframes fadeSlideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Decorative dots */
+        .dot-grid {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(168, 85, 247, 0.15) 1px, transparent 1px);
+            background-size: 30px 30px;
+            mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer">
+        <div class="bg-gradient"></div>
+        <div class="dot-grid"></div>
+        <div class="grid-lines"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="glow-line glow-line-1"></div>
+        <div class="glow-line glow-line-2"></div>
+    </div>
+
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <div class="logo-badge">
+            <span class="logo-icon">🎓</span>
+            <span class="logo-text">منصة تعليمية متكاملة</span>
+        </div>
+
+        <div class="spinner-wrapper">
+            <div class="spinner-ring spinner-ring-1"></div>
+            <div class="spinner-ring spinner-ring-2"></div>
+            <div class="spinner-ring spinner-ring-3"></div>
+            <div class="spinner-core"></div>
+        </div>
+
+        <h1 class="main-title">
+            نظام إدارة
+            <span class="title-highlight">سنتر المحكمة</span>
+        </h1>
+
+        <p class="subtitle">وفّر وقتك وطوّر مهاراتك باستخدام الذكاء الاصطناعي</p>
+
+        <div class="progress-container">
+            <div class="progress-track">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <p class="loading-text">جاري التحميل...</p>
+    </div>
+
+    <script>
+        // Generate floating particles
+        const container = document.getElementById('particles');
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (6 + Math.random() * 10) + 's';
+            p.style.animationDelay = (Math.random() * 10) + 's';
+            p.style.width = p.style.height = (1 + Math.random() * 3) + 'px';
+            p.style.opacity = Math.random() * 0.5;
+            const colors = ['#c084fc', '#a855f7', '#3b82f6', '#ec4899'];
+            p.style.background = colors[Math.floor(Math.random() * colors.length)];
+            container.appendChild(p);
+        }
+
+        // Redirect logic
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        if (isLoggedIn === 'true') {
+            window.location.href = 'home.html';
+        } else {
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2200);
+        }
+    </script>
+</body>
+</html>

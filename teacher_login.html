@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل دخول المدرسين - سنتر المحكمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --purple-deep: #0d0014;
+            --purple-bright: #7c3aed;
+            --purple-glow: #a855f7;
+            --purple-light: #c084fc;
+            --blue-accent: #3b82f6;
+            --glass-border: rgba(168, 85, 247, 0.25);
+            --card-bg: rgba(26, 0, 48, 0.75);
+        }
+        body {
+            font-family:'Cairo',sans-serif;
+            background: var(--purple-deep);
+            min-height:100vh;
+            display:flex; align-items:center; justify-content:center;
+            position:relative; overflow:hidden;
+        }
+        .bg-gradient {
+            position:fixed; inset:0; z-index:0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.35) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168,85,247,0.2) 0%, transparent 50%),
+                linear-gradient(180deg, #0d0014 0%, #12001f 40%, #0a0018 100%);
+        }
+        .card {
+            position:relative; z-index:10;
+            width:100%; max-width:420px;
+            background: var(--card-bg);
+            border:1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            border-radius:20px;
+            padding:36px 32px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
+        .card h1 {
+            text-align:center; font-size:22px; font-weight:900;
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-glow), var(--blue-accent));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+            margin-bottom:6px;
+        }
+        .card p.sub { text-align:center; color:rgba(255,255,255,0.45); font-size:13px; margin-bottom:26px; }
+        .form-group { margin-bottom:18px; }
+        label { display:block; color:rgba(255,255,255,0.7); font-size:14px; margin-bottom:8px; font-weight:700; }
+        select, input {
+            width:100%; padding:13px 14px;
+            background: rgba(255,255,255,0.05);
+            border:1px solid rgba(168,85,247,0.25);
+            border-radius:10px; color:#fff; font-family:'Cairo',sans-serif; font-size:15px;
+            outline:none; transition:.2s;
+        }
+        select:focus, input:focus { border-color: var(--purple-glow); box-shadow:0 0 0 3px rgba(168,85,247,0.15); }
+        select option { background:#1a0030; }
+        button.submit-btn {
+            width:100%; padding:14px; margin-top:6px;
+            background: linear-gradient(135deg, var(--purple-bright), var(--purple-glow));
+            border:none; border-radius:12px; color:#fff; font-family:'Cairo',sans-serif;
+            font-size:16px; font-weight:900; cursor:pointer; transition:.25s;
+            box-shadow: 0 6px 20px rgba(124,58,237,0.4);
+        }
+        button.submit-btn:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(124,58,237,0.6); }
+        .error-msg {
+            display:none; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3);
+            color:#f87171; padding:11px 14px; border-radius:10px; font-size:13px; margin-bottom:16px; text-align:center;
+        }
+        .status-msg {
+            text-align:center; font-size:12px; color:rgba(255,255,255,0.35); margin-top:18px;
+        }
+        .back-link { display:block; text-align:center; margin-top:16px; color:var(--purple-light); font-size:13px; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="card">
+        <h1>🔐 دخول المدرسين</h1>
+        <p class="sub">سنتر المحكمة — لعرض بياناتك وطلابك فقط</p>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label>اختر اسمك</label>
+                <select id="teacherSelect" required>
+                    <option value="">جاري تحميل الأسماء...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور (رقم تليفونك المسجل)</label>
+                <input type="password" id="teacherPassword" required placeholder="01xxxxxxxxx">
+            </div>
+            <button type="submit" class="submit-btn">دخول</button>
+        </form>
+
+        <p class="status-msg" id="statusMsg">🔌 جاري الاتصال بـ Firebase...</p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHM7XE_oYiLpTx_JKgNIgTXTPGX1HHjyU",
+            authDomain: "almahkma-bb197.firebaseapp.com",
+            projectId: "almahkma-bb197",
+            storageBucket: "almahkma-bb197.firebasestorage.app",
+            messagingSenderId: "621299576828",
+            appId: "1:621299576828:web:e6bbeb87473a36ebb2cc79"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let teachersList = [];
+
+        function loadTeachers() {
+            db.collection('teachers').doc('data').onSnapshot((snap) => {
+                teachersList = snap.exists ? (snap.data().teachers || []) : [];
+                const sel = document.getElementById('teacherSelect');
+                sel.innerHTML = '<option value="">-- اختر اسمك --</option>' +
+                    teachersList.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                document.getElementById('statusMsg').textContent = '🔥 متصل بالنظام';
+            }, (err) => {
+                console.error(err);
+                document.getElementById('statusMsg').textContent = '❌ خطأ في الاتصال — تأكد من الإنترنت أو من Firebase Rules';
+            });
+        }
+        loadTeachers();
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const teacherId = document.getElementById('teacherSelect').value;
+            const password  = document.getElementById('teacherPassword').value.trim();
+            const errorBox  = document.getElementById('errorMsg');
+
+            if (!teacherId) {
+                errorBox.textContent = 'اختر اسمك أولاً';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            const teacher = teachersList.find(t => String(t.id) === String(teacherId));
+            if (!teacher) {
+                errorBox.textContent = 'حدث خطأ، حاول تحديث الصفحة';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            function normalizePhone(str) {
+                if (!str) return '';
+                // تحويل الأرقام العربية (٠١٢٣...) لأرقام إنجليزية
+                const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+                str = str.replace(/[٠-٩]/g, d => arabicDigits.indexOf(d));
+                // شيل أي مسافات أو شرطات أو رموز
+                str = str.replace(/[^\d]/g, '');
+                // لو الرقم مكتوب بمفتاح الدولة (20xxxxxxxxxx) حوّله لصيغة محلية (0xxxxxxxxxx)
+                if (str.startsWith('20') && str.length === 12) str = '0' + str.slice(2);
+                // لو الرقم اتخزن من إكسل وفقد الصفر الأول (10 أرقام بدل 11)
+                if (str.length === 10 && !str.startsWith('0')) str = '0' + str;
+                return str;
+            }
+
+            const savedPhone = normalizePhone(teacher.phone || '');
+            const enteredPhone = normalizePhone(password);
+            console.log('🔍 تشخيص تسجيل الدخول:');
+            console.log('اسم المدرس المختار:', teacher.name);
+            console.log('الرقم المحفوظ في قاعدة البيانات (خام):', JSON.stringify(teacher.phone));
+            console.log('الرقم المحفوظ بعد التنضيف:', savedPhone);
+            console.log('الرقم اللي كتبته (خام):', JSON.stringify(password));
+            console.log('الرقم اللي كتبته بعد التنضيف:', enteredPhone);
+
+            if (!savedPhone || enteredPhone !== savedPhone) {
+                errorBox.textContent = 'كلمة المرور غير صحيحة';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            errorBox.style.display = 'none';
+            sessionStorage.setItem('teacherLoggedIn', 'true');
+            sessionStorage.setItem('teacherId', teacher.id);
+            sessionStorage.setItem('teacherName', teacher.name);
+            window.location.href = 'teacher_portal.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - سنتر المحكمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --deep: #08000f;
+            --mid: #12001e;
+            --purple: #7c3aed;
+            --glow: #a855f7;
+            --light: #c084fc;
+            --blue: #3b82f6;
+            --white: #ffffff;
+            --muted: rgba(255,255,255,0.55);
+            --border: rgba(168,85,247,0.25);
+            --card: rgba(255,255,255,0.04);
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--deep);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Background */
+        .bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 90% 60% at 50% -10%, rgba(124,58,237,0.45) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 90% 80%, rgba(168,85,247,0.2) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 40% at 10% 60%, rgba(59,130,246,0.15) 0%, transparent 50%),
+                linear-gradient(180deg, #08000f 0%, #10001c 100%);
+        }
+
+        .grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+            background-size: 55px 55px;
+        }
+
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 500px; height: 500px; background: rgba(124,58,237,0.25); top: -150px; left: 50%; transform: translateX(-50%); }
+        .orb-2 { width: 300px; height: 300px; background: rgba(59,130,246,0.15); bottom: 0; left: -80px; }
+        .orb-3 { width: 250px; height: 250px; background: rgba(168,85,247,0.2); bottom: 10%; right: -50px; }
+
+        /* Particles */
+        .particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: rise linear infinite;
+            opacity: 0;
+        }
+        @keyframes rise {
+            0%   { transform: translateY(100vh); opacity: 0; }
+            10%  { opacity: 0.5; }
+            90%  { opacity: 0.2; }
+            100% { transform: translateY(-5vh); opacity: 0; }
+        }
+
+        /* Card */
+        .card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 440px;
+            background: rgba(18, 0, 30, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+            animation: cardIn 0.7s cubic-bezier(0.22,1,0.36,1) both;
+            box-shadow: 0 0 60px rgba(124,58,237,0.15), 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Top glow strip */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--purple), var(--light), var(--blue), transparent);
+            box-shadow: 0 0 20px rgba(168,85,247,0.6);
+        }
+
+        /* Header */
+        .header {
+            padding: 36px 32px 24px;
+            text-align: center;
+            border-bottom: 1px solid rgba(168,85,247,0.1);
+        }
+
+        .logo-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            background: rgba(124,58,237,0.15);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 20px;
+            font-size: 32px;
+            margin-bottom: 16px;
+            box-shadow: 0 0 30px rgba(168,85,247,0.25);
+            animation: pulseLogo 3s ease-in-out infinite;
+        }
+
+        @keyframes pulseLogo {
+            0%,100% { box-shadow: 0 0 20px rgba(168,85,247,0.2); }
+            50%      { box-shadow: 0 0 40px rgba(168,85,247,0.5); }
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--white);
+            margin-bottom: 6px;
+        }
+
+        .brand {
+            background: linear-gradient(135deg, var(--light), var(--glow), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* Body */
+        .body {
+            padding: 28px 32px 32px;
+        }
+
+        /* Alert messages */
+        .alert {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            animation: slideAlert 0.3s ease;
+        }
+        @keyframes slideAlert {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .alert-error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+        }
+        .alert-success {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: #86efac;
+        }
+
+        /* Form groups */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 8px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            pointer-events: none;
+            z-index: 2;
+            filter: drop-shadow(0 0 4px rgba(168,85,247,0.4));
+        }
+
+        .input-wrap input {
+            width: 100%;
+            padding: 14px 46px 14px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168,85,247,0.2);
+            border-radius: 12px;
+            color: var(--white);
+            font-size: 14px;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .input-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+
+        .input-wrap input:focus {
+            border-color: var(--glow);
+            background: rgba(168,85,247,0.08);
+            box-shadow: 0 0 0 3px rgba(168,85,247,0.12), 0 0 20px rgba(168,85,247,0.1);
+        }
+
+        /* Remember / Forgot */
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .remember input[type="checkbox"] {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .remember input[type="checkbox"]:checked {
+            background: var(--purple);
+            border-color: var(--purple);
+        }
+
+        .remember input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: -1px;
+            left: 2px;
+            font-size: 11px;
+            color: white;
+        }
+
+        .forgot {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .forgot:hover { color: var(--white); }
+
+        /* Submit button */
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--purple) 0%, #6d28d9 50%, var(--blue) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 900;
+            font-family: 'Cairo', sans-serif;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(124,58,237,0.5);
+            letter-spacing: 0.5px;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(124,58,237,0.7);
+        }
+        .btn-login:hover::before { opacity: 1; }
+        .btn-login:active { transform: translateY(0); }
+
+        /* Shine sweep on button */
+        .btn-login::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            animation: btnShine 3s ease-in-out infinite;
+        }
+        @keyframes btnShine {
+            0%   { left: -100%; }
+            40%  { left: 150%; }
+            100% { left: 150%; }
+        }
+
+        /* Footer note */
+        .footer-note {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.25);
+        }
+
+        @media (max-width: 480px) {
+            .body, .header { padding-left: 20px; padding-right: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg"></div>
+    <div class="grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="particles" id="particles"></div>
+
+    <div class="card">
+        <div class="header">
+            <div class="logo-wrap">🎓</div>
+            <h1>نظام إدارة <span class="brand">سنتر المحكمة</span></h1>
+            <p>مرحباً بك — سجّل دخولك للمتابعة</p>
+        </div>
+
+        <div class="body">
+            <div id="errorMsg" class="alert alert-error">
+                <span>⚠️</span><span id="errorText"></span>
+            </div>
+            <div id="successMsg" class="alert alert-success">
+                <span>✅</span><span id="successText"></span>
+            </div>
+
+            <form id="loginForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="username">اسم المستخدم أو البريد الإلكتروني</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="username" placeholder="أدخل اسم المستخدم" autocomplete="username" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">كلمة المرور</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" placeholder="أدخل كلمة المرور" autocomplete="current-password" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <label class="remember">
+                        <input type="checkbox" id="remember">
+                        <span>تذكرني</span>
+                    </label>
+                    <a href="#" class="forgot" id="forgotLink">نسيت كلمة المرور؟</a>
+                </div>
+
+                <button type="submit" class="btn-login" id="submitBtn">
+                    🚀 تسجيل الدخول
+                </button>
+            </form>
+
+            <p class="footer-note">© 2025 سنتر المحكمة — جميع الحقوق محفوظة</p>
+        </div>
+    </div>
+
+    <script>
+        // Particles
+        const pc = document.getElementById('particles');
+        const cols = ['#c084fc','#a855f7','#3b82f6','#818cf8'];
+        for (let i = 0; i < 30; i++) {
+            const d = document.createElement('div');
+            d.className = 'particle';
+            const s = 1 + Math.random() * 3;
+            d.style.cssText = `
+                width:${s}px; height:${s}px;
+                left:${Math.random()*100}vw;
+                background:${cols[Math.floor(Math.random()*cols.length)]};
+                animation-duration:${7+Math.random()*12}s;
+                animation-delay:${Math.random()*12}s;
+            `;
+            pc.appendChild(d);
+        }
+
+        const validUsers = {
+            'admin': { password:'500600', role:'admin' },
+            'مدير':  { password:'500600', role:'admin' },
+            'user1': { password:'100100', role:'entry' },
+            'user2': { password:'200200', role:'entry' }
+        };
+
+        function showError(msg) {
+            document.getElementById('errorText').textContent = msg;
+            const el = document.getElementById('errorMsg');
+            el.style.display = 'flex';
+            document.getElementById('successMsg').style.display = 'none';
+            setTimeout(() => el.style.display = 'none', 4000);
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('successText').textContent = msg;
+            document.getElementById('successMsg').style.display = 'flex';
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value;
+            const rem  = document.getElementById('remember').checked;
+
+            if (!user || !pass) { showError('الرجاء إدخال اسم المستخدم وكلمة المرور'); return; }
+
+            if (validUsers[user] && validUsers[user].password === pass) {
+                showSuccess('تم تسجيل الدخول بنجاح! جاري التحويل...');
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('currentUser', user);
+                sessionStorage.setItem('userRole', validUsers[user].role);
+                if (rem) localStorage.setItem('rememberedUser', user);
+                const btn = document.getElementById('submitBtn');
+                btn.textContent = '⏳ جاري التحويل...';
+                btn.disabled = true;
+                setTimeout(() => window.location.href = 'home.html', 1500);
+            } else {
+                showError('اسم المستخدم أو كلمة المرور غير صحيحة!');
+                document.getElementById('password').value = '';
+            }
+        });
+
+        document.getElementById('forgotLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            showSuccess('تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني');
+        });
+    </script>
+</body>
+</html>

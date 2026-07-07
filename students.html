@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الطلاب - نظام إدارة سنتر المحكمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --purple-deep: #0d0014;
+            --purple-mid: #1a0030;
+            --purple-bright: #7c3aed;
+            --purple-glow: #a855f7;
+            --purple-light: #c084fc;
+            --blue-accent: #3b82f6;
+            --pink-accent: #ec4899;
+            --white: #ffffff;
+            --glass-bg: rgba(255,255,255,0.04);
+            --glass-border: rgba(168, 85, 247, 0.2);
+            --card-bg: rgba(26, 0, 48, 0.7);
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--purple-deep);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ── Background ── */
+        .bg-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+        .bg-gradient {
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.35) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168,85,247,0.2) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 40% at 20% 70%, rgba(59,130,246,0.15) 0%, transparent 50%),
+                linear-gradient(180deg, #0d0014 0%, #12001f 40%, #0a0018 100%);
+        }
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); animation: floatOrb 8s ease-in-out infinite; }
+        .orb-1 { width:400px; height:400px; background:rgba(124,58,237,0.25); top:-100px; left:50%; transform:translateX(-50%); animation-delay:0s; }
+        .orb-2 { width:300px; height:300px; background:rgba(168,85,247,0.15); bottom:10%; right:-50px; animation-delay:-3s; }
+        .orb-3 { width:250px; height:250px; background:rgba(59,130,246,0.12); bottom:20%; left:-30px; animation-delay:-5s; }
+        @keyframes floatOrb { 0%,100%{transform:translateY(0) translateX(0);} 33%{transform:translateY(-20px) translateX(10px);} 66%{transform:translateY(10px) translateX(-10px);} }
+        .grid-lines {
+            position: absolute; inset: 0;
+            background-image: linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+        .dot-grid {
+            position: absolute; inset: 0;
+            background-image: radial-gradient(rgba(168,85,247,0.12) 1px, transparent 1px);
+            background-size: 30px 30px;
+            mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
+        }
+        .particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+        .particle { position: absolute; border-radius: 50%; animation: floatParticle linear infinite; opacity: 0; }
+        @keyframes floatParticle { 0%{transform:translateY(100vh);opacity:0;} 10%{opacity:0.5;} 90%{opacity:0.25;} 100%{transform:translateY(-10vh) translateX(30px);opacity:0;} }
+
+        /* ── Layout ── */
+        .container { position: relative; z-index: 10; max-width: 1400px; margin: 0 auto; }
+
+        /* ── Navbar ── */
+        .navbar {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            padding: 18px 28px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            animation: fadeSlideDown 0.6s ease both;
+        }
+        .logo {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 22px; font-weight: 900;
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-glow), var(--blue-accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            filter: drop-shadow(0 0 10px rgba(168,85,247,0.5));
+        }
+        .back-btn {
+            background: linear-gradient(135deg, var(--purple-bright), var(--purple-glow));
+            color: white; border: none; padding: 10px 22px; border-radius: 10px;
+            cursor: pointer; font-size: 15px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            text-decoration: none; display: inline-block; transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(124,58,237,0.4);
+        }
+        .back-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(124,58,237,0.65); }
+
+        /* ── Firebase Status ── */
+        .firebase-bar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 18px; border-radius: 12px; margin-bottom: 20px;
+            font-size: 13px; font-weight: 700; transition: all .3s;
+            backdrop-filter: blur(8px);
+            animation: fadeSlideDown 0.6s ease 0.1s both;
+        }
+        .firebase-bar.connected  { background:rgba(34,197,94,0.12);  color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+        .firebase-bar.error      { background:rgba(239,68,68,0.12);  color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+        .firebase-bar.connecting { background:rgba(234,179,8,0.12);  color:#facc15; border:1px solid rgba(234,179,8,0.3); }
+        .firebase-bar.saving     { background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); }
+        .firebase-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        .firebase-dot.connected  { background:#4ade80; box-shadow:0 0 8px #4ade80; animation:fbBlink 2s infinite; }
+        .firebase-dot.error      { background:#f87171; }
+        .firebase-dot.connecting { background:#facc15; animation:fbBlink .6s infinite; }
+        .firebase-dot.saving     { background:#60a5fa; animation:fbBlink .4s infinite; }
+        @keyframes fbBlink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+        /* ── Main Content ── */
+        .main-content {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            padding: 28px;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            animation: fadeSlideDown 0.6s ease 0.15s both;
+        }
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 28px; padding-bottom: 18px;
+            border-bottom: 1px solid rgba(168,85,247,0.2);
+            flex-wrap: wrap; gap: 12px;
+        }
+        .page-header h1 {
+            font-size: 28px; font-weight: 900;
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-glow), var(--blue-accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            filter: drop-shadow(0 0 12px rgba(168,85,247,0.5));
+        }
+
+        /* ── Buttons ── */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--purple-bright), var(--purple-glow));
+            color: white; border: none; padding: 11px 22px; border-radius: 10px;
+            cursor: pointer; font-size: 15px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            transition: all 0.3s; box-shadow: 0 4px 15px rgba(124,58,237,0.4);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(124,58,237,0.65); }
+
+        .add-student-btn {
+            background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+            color: white; border: none; padding: 11px 24px; border-radius: 10px;
+            cursor: pointer; font-size: 15px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            transition: all 0.3s; box-shadow: 0 4px 15px rgba(14,165,233,0.4);
+        }
+        .add-student-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(14,165,233,0.65); }
+
+        .print-btn {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white; border: none; padding: 11px 22px; border-radius: 10px;
+            cursor: pointer; font-size: 15px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            transition: all 0.3s; box-shadow: 0 4px 15px rgba(109,40,217,0.4);
+        }
+        .print-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(109,40,217,0.65); }
+
+        /* ── Stats ── */
+        .stats-cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; margin-bottom: 28px;
+        }
+        .stat-card {
+            background: rgba(124,58,237,0.15);
+            border: 1px solid rgba(168,85,247,0.25);
+            backdrop-filter: blur(8px);
+            padding: 22px; border-radius: 14px; text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(124,58,237,0.3); }
+        .stat-card .number {
+            font-size: 34px; font-weight: 900; margin-bottom: 6px;
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-glow));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            filter: drop-shadow(0 0 10px rgba(168,85,247,0.5));
+        }
+        .stat-card .label { font-size: 14px; color: rgba(255,255,255,0.5); }
+
+        /* ── Search & Filter ── */
+        .search-filter {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px; margin-bottom: 22px;
+        }
+        .search-filter input, .search-filter select {
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 10px; font-size: 14px;
+            font-family: 'Cairo', sans-serif; color: var(--white);
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-filter input::placeholder { color: rgba(255,255,255,0.35); }
+        .search-filter input:focus, .search-filter select:focus {
+            border-color: var(--purple-glow);
+            box-shadow: 0 0 0 3px rgba(168,85,247,0.15);
+        }
+        .search-filter select option { background: #160025; color: white; }
+
+        /* ── Table ── */
+        .students-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .students-table th {
+            background: linear-gradient(135deg, rgba(124,58,237,0.5), rgba(168,85,247,0.35));
+            color: rgba(255,255,255,0.9); padding: 14px 16px;
+            text-align: right; font-weight: 700; font-size: 14px;
+            border-bottom: 1px solid rgba(168,85,247,0.3);
+        }
+        .students-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(168,85,247,0.1);
+            color: rgba(255,255,255,0.75); font-size: 14px;
+            vertical-align: middle;
+        }
+        .students-table tr:hover td { background: rgba(168,85,247,0.07); }
+
+        .action-btns { display: flex; gap: 7px; }
+
+        .edit-btn {
+            padding: 6px 14px; border: none; border-radius: 7px;
+            cursor: pointer; font-size: 13px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white;
+            transition: transform 0.2s; box-shadow: 0 2px 8px rgba(14,165,233,0.35);
+        }
+        .edit-btn:hover { transform: scale(1.05); }
+
+        .delete-btn {
+            padding: 6px 14px; border: none; border-radius: 7px;
+            cursor: pointer; font-size: 13px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            background: linear-gradient(135deg, #dc2626, #ef4444); color: white;
+            transition: transform 0.2s; box-shadow: 0 2px 8px rgba(220,38,38,0.35);
+        }
+        .delete-btn:hover { transform: scale(1.05); }
+
+        .photo-btn {
+            padding: 6px 12px; border: none; border-radius: 7px;
+            cursor: pointer; font-size: 13px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            background: linear-gradient(135deg, #7c3aed, #a855f7); color: white;
+            transition: transform 0.2s; box-shadow: 0 2px 8px rgba(124,58,237,0.35);
+        }
+        .photo-btn:hover { transform: scale(1.05); }
+
+        /* ── Thumbnail ── */
+        .student-thumb { width:36px; height:36px; border-radius:50%; object-fit:cover; border:2px solid rgba(168,85,247,0.5); vertical-align:middle; }
+        .student-thumb-placeholder {
+            width:36px; height:36px; border-radius:50%;
+            background: linear-gradient(135deg, var(--purple-bright), var(--purple-glow));
+            display:inline-flex; align-items:center; justify-content:center;
+            color:white; font-size:15px; vertical-align:middle;
+        }
+
+        /* ── Empty State ── */
+        .empty-state { text-align:center; padding:60px 20px; color:rgba(255,255,255,0.4); }
+        .empty-state .icon { font-size:70px; margin-bottom:16px; }
+        .empty-state h3 { font-size:20px; color:rgba(255,255,255,0.6); margin-bottom:8px; }
+        .empty-state p { font-size:14px; }
+
+        /* ── Modal ── */
+        .modal {
+            display: none; position: fixed; z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+        }
+        .modal-content {
+            background: #160025;
+            border: 1px solid rgba(168,85,247,0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(124,58,237,0.2);
+            margin: 2% auto; padding: 36px; border-radius: 18px;
+            width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto;
+        }
+        .close {
+            color: rgba(255,255,255,0.4); float: left; font-size: 30px;
+            font-weight: bold; cursor: pointer; transition: color 0.2s;
+            background: rgba(255,255,255,0.07); border-radius: 8px;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+        .close:hover { color: #f87171; background: rgba(220,38,38,0.2); }
+        .modal-header { text-align: center; margin-bottom: 24px; clear: both; padding-top: 10px; }
+        .modal-header h2 {
+            font-size: 22px; font-weight: 900;
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-glow));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        /* ── Form ── */
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 700; color: rgba(255,255,255,0.8); font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 12px 14px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 10px; font-size: 14px; font-family: 'Cairo', sans-serif;
+            color: var(--white); transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        }
+        .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,0.3); }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--purple-glow); box-shadow: 0 0 0 3px rgba(168,85,247,0.15);
+        }
+        .form-group select option { background: #160025; color: white; }
+        .form-group input[readonly] { color: rgba(255,255,255,0.5); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        #subjectsCheckboxes {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            padding: 14px; border: 1px solid rgba(168,85,247,0.25); border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+        }
+        #subjectsCheckboxes label {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            padding: 7px 10px; border-radius: 8px;
+            border: 1px solid rgba(168,85,247,0.12);
+            background: rgba(168,85,247,0.06); color: rgba(255,255,255,0.75);
+            font-size: 13px; font-weight: 700; transition: all 0.2s; margin: 0;
+        }
+        #subjectsCheckboxes label:hover { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.3); }
+        #subjectsCheckboxes input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--purple-glow); }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--purple-bright), var(--purple-glow));
+            color: white; border: none; padding: 14px 40px; border-radius: 10px;
+            font-size: 16px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            cursor: pointer; width: 100%; margin-top: 20px;
+            transition: all 0.3s; box-shadow: 0 4px 20px rgba(124,58,237,0.45);
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 26px rgba(124,58,237,0.65); }
+
+        /* ── Cards Modal ── */
+        .cards-toolbar {
+            display: flex; gap: 12px; align-items: center;
+            margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .cards-filter-select {
+            padding: 9px 14px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 10px; font-size: 14px; font-family: 'Cairo', sans-serif;
+            color: var(--white); outline: none;
+        }
+        .cards-filter-select option { background: #160025; }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 16px;
+        }
+
+        /* ── Student Card (Barcode Card) ── */
+        /* ══ STUDENT ID CARD ══ */
+        .student-card {
+            width: 320px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(124,58,237,0.3);
+            page-break-inside: avoid;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Cairo', sans-serif;
+            position: relative;
+        }
+        .card-print-single-btn {
+            position: absolute; top: 8px; left: 8px; z-index: 5;
+            background: rgba(255,255,255,0.9); border: 1px solid rgba(124,58,237,0.4);
+            color: #5b21b6; width: 30px; height: 30px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; cursor: pointer; transition: .2s;
+        }
+        .card-print-single-btn:hover { background: #7c3aed; color: #fff; transform: scale(1.08); }
+        /* Purple diagonal top stripe */
+        .card-stripe {
+            background: linear-gradient(135deg, #5b21b6, #7c3aed, #a855f7);
+            padding: 14px 16px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-stripe::after {
+            content: '';
+            position: absolute;
+            bottom: -18px; left: -10px;
+            width: 120%; height: 36px;
+            background: #ffffff;
+            transform: rotate(-2deg);
+        }
+        .card-stripe-brand {
+            font-size: 17px; font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            z-index: 1;
+        }
+        .card-stripe-logo {
+            font-size: 26px; z-index: 1;
+        }
+        /* White body */
+        .card-body {
+            background: #ffffff;
+            padding: 18px 16px 10px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        .card-photo {
+            width: 68px; height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 2.5px solid #7c3aed;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(124,58,237,0.35);
+        }
+        .card-photo-placeholder {
+            width: 68px; height: 80px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px; flex-shrink: 0;
+            border: 2.5px solid #7c3aed;
+        }
+        .card-info { flex: 1; min-width: 0; direction: rtl; }
+        .card-label {
+            font-size: 9px; font-weight: 700;
+            color: #7c3aed;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1px;
+        }
+        .card-name {
+            font-size: 13px; font-weight: 900;
+            color: #1e0035;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .card-class {
+            font-size: 10px; color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .card-field {
+            display: flex; align-items: center;
+            gap: 5px; margin-bottom: 4px;
+        }
+        .card-field-label {
+            font-size: 9px; color: #9ca3af;
+            font-weight: 700; min-width: 52px;
+            text-align: right;
+        }
+        .card-field-value {
+            font-size: 10px; color: #1e0035;
+            font-weight: 800; font-family: monospace;
+            letter-spacing: 1px;
+        }
+        /* Barcode section */
+        .card-barcode-section {
+            background: #f9f6ff;
+            border-top: 1px solid #ede9fe;
+            padding: 8px 14px 4px;
+            text-align: center;
+        }
+        .card-barcode-img {
+            width: 100%; max-height: 50px;
+        }
+        .card-code {
+            font-size: 9px; color: #6b7280;
+            font-family: monospace;
+            letter-spacing: 2px;
+            margin-top: 2px;
+        }
+        /* Footer strip */
+        .card-footer {
+            background: linear-gradient(135deg, #5b21b6, #7c3aed);
+            text-align: center;
+            padding: 5px;
+            font-size: 8px;
+            color: rgba(255,255,255,0.75);
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        /* ── Animation ── */
+        @keyframes fadeSlideDown { from{opacity:0;transform:translateY(-16px);} to{opacity:1;transform:translateY(0);} }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+        ::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.4); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.7); }
+
+        /* ── Print ── */
+        @media print {
+            body * { visibility: hidden; }
+            #cardsModal, #cardsModal * { visibility: visible; }
+            html, body { height: auto !important; overflow: visible !important; }
+            #cardsModal, #cardsModal * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            #cardsModal {
+                position: absolute !important;
+                left: 0; top: 0; width: 100%; height: auto !important;
+                background: white !important; backdrop-filter: none !important;
+                display: block !important; overflow: visible !important;
+            }
+            .cards-toolbar, #cardsCloseBtn { display: none !important; }
+            #cardsModal .modal-content {
+                box-shadow: none; max-width: 100%; padding: 10px; background: white;
+                max-height: none !important; overflow: visible !important; margin: 0 !important;
+            }
+            .student-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
+            .card-print-single-btn { display: none !important; }
+            body.printing-single #cardsModal .student-card { display: none !important; }
+            body.printing-single #cardsModal .student-card.print-only-card { display: flex !important; }
+            .card-barcode-img { filter: none; }
+            .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; overflow: visible !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background -->
+    <div class="bg-layer">
+        <div class="bg-gradient"></div>
+        <div class="dot-grid"></div>
+        <div class="grid-lines"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="logo">🎓 إدارة الطلاب</div>
+            <a href="index.html" class="back-btn">← العودة للصفحة الرئيسية</a>
+        </nav>
+
+        <!-- Firebase Status -->
+        <div class="firebase-bar connecting" id="firebaseStatusBar">
+            <div class="firebase-dot connecting" id="firebaseDot"></div>
+            <span id="firebaseMsg">🔌 جاري الاتصال بـ Firebase...</span>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="page-header">
+                <h1>👨‍🎓 إدارة بيانات الطلاب</h1>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="print-btn" onclick="openCardsModal()">🖨️ طباعة كروت الباركود</button>
+                    <button class="add-student-btn" onclick="openAddModal()">➕ إضافة طالب جديد</button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="number" id="totalStudentsCount">0</div>
+                    <div class="label">إجمالي الطلاب</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="classesCount">0</div>
+                    <div class="label">عدد الفصول</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="subjectsCount">0</div>
+                    <div class="label">عدد المواد</div>
+                </div>
+            </div>
+
+            <!-- Search & Filter -->
+            <div class="search-filter">
+                <input type="text" id="searchInput" placeholder="🔍 البحث بالاسم أو رقم الهاتف..." oninput="filterStudents()">
+                <select id="classFilter" onchange="filterStudents()">
+                    <option value="">جميع الفصول</option>
+                    <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
+                    <option value="الصف الثاني الابتدائي">الصف الثاني الابتدائي</option>
+                    <option value="الصف الثالث الابتدائي">الصف الثالث الابتدائي</option>
+                    <option value="الصف الرابع الابتدائي">الصف الرابع الابتدائي</option>
+                    <option value="الصف الخامس الابتدائي">الصف الخامس الابتدائي</option>
+                    <option value="الصف السادس الابتدائي">الصف السادس الابتدائي</option>
+                    <option value="الصف الأول الإعدادي">الصف الأول الإعدادي</option>
+                    <option value="الصف الثاني الإعدادي">الصف الثاني الإعدادي</option>
+                    <option value="الصف الثالث الإعدادي">الصف الثالث الإعدادي</option>
+                    <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
+                    <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
+                    <option value="الصف الثالث الثانوي">الصف الثالث الثانوي</option>
+                </select>
+                <select id="subjectFilter" onchange="filterStudents()">
+                    <option value="">جميع المواد</option>
+                    <option value="math">رياضيات</option>
+                    <option value="science">علوم</option>
+                    <option value="arabic">عربي</option>
+                    <option value="english">إنجليزي</option>
+                    <option value="studies">دراسات</option>
+                </select>
+            </div>
+
+            <!-- Table -->
+            <div id="studentsTableContainer">
+                <table class="students-table">
+                    <thead>
+                        <tr>
+                            <th>الصورة / الاسم</th>
+                            <th>الصف الدراسي</th>
+                            <th>المدرس</th>
+                            <th>المواد</th>
+                            <th>تاريخ الميلاد</th>
+                            <th>السن</th>
+                            <th>رقم الهاتف</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody"></tbody>
+                </table>
+                <div id="emptyState" class="empty-state" style="display:none;">
+                    <div class="icon">👨‍🎓</div>
+                    <h3>لا توجد بيانات طلاب</h3>
+                    <p>ابدأ بإضافة طالب جديد</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Student Modal -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2 id="modalTitle">➕ إضافة طالب جديد</h2>
+            </div>
+            <form id="studentForm" onsubmit="saveStudent(event)">
+                <div class="form-group" style="position:relative;">
+                    <label>الاسم الكامل *</label>
+                    <input type="text" id="studentName" required placeholder="أدخل الاسم الكامل" autocomplete="off"
+                           oninput="renderNameSuggestions()" onfocus="renderNameSuggestions()"
+                           onblur="setTimeout(()=>{document.getElementById('nameSuggestions').style.display='none';}, 150)">
+                    <div id="nameSuggestions" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:50;
+                         background:#1a0f2e;border:1px solid rgba(168,85,247,.35);border-radius:10px;margin-top:4px;
+                         max-height:220px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);"></div>
+                    <small id="nameDuplicateWarning" style="display:none;color:#f87171;font-size:12.5px;margin-top:6px;"></small>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>الصف الدراسي *</label>
+                        <select id="studentClass" required>
+                            <option value="">اختر الصف</option>
+                            <optgroup label="المرحلة الابتدائية">
+                                <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
+                                <option value="الصف الثاني الابتدائي">الصف الثاني الابتدائي</option>
+                                <option value="الصف الثالث الابتدائي">الصف الثالث الابتدائي</option>
+                                <option value="الصف الرابع الابتدائي">الصف الرابع الابتدائي</option>
+                                <option value="الصف الخامس الابتدائي">الصف الخامس الابتدائي</option>
+                                <option value="الصف السادس الابتدائي">الصف السادس الابتدائي</option>
+                            </optgroup>
+                            <optgroup label="المرحلة الإعدادية">
+                                <option value="الصف الأول الإعدادي">الصف الأول الإعدادي</option>
+                                <option value="الصف الثاني الإعدادي">الصف الثاني الإعدادي</option>
+                                <option value="الصف الثالث الإعدادي">الصف الثالث الإعدادي</option>
+                            </optgroup>
+                            <optgroup label="المرحلة الثانوية">
+                                <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
+                                <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
+                                <option value="الصف الثالث الثانوي">الصف الثالث الثانوي</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>المواد * (يمكن اختيار أكثر من مادة)</label>
+                        <div id="subjectsCheckboxes">
+                            <label><input type="checkbox" name="subjects" value="math"><span>📐 رياضيات</span></label>
+                            <label><input type="checkbox" name="subjects" value="science"><span>🔬 علوم</span></label>
+                            <label><input type="checkbox" name="subjects" value="arabic"><span>📝 عربي</span></label>
+                            <label><input type="checkbox" name="subjects" value="english"><span>🔤 إنجليزي</span></label>
+                            <label><input type="checkbox" name="subjects" value="studies"><span>🌍 دراسات</span></label>
+                        </div>
+                        <small id="subjectsError" style="color:#f87171;display:none;margin-top:5px;">يجب اختيار مادة واحدة على الأقل</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>تاريخ الميلاد *</label>
+                        <input type="date" id="studentBirthdate" required onchange="calculateAge()">
+                    </div>
+                    <div class="form-group">
+                        <label>السن</label>
+                        <input type="text" id="studentAge" readonly placeholder="يتم حسابه تلقائياً">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>المدرس *</label>
+                    <select id="studentTeacher" required>
+                        <option value="">اختر المدرس</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف *</label>
+                    <input type="tel" id="studentPhone" required placeholder="01xxxxxxxxx" pattern="[0-9]{11}">
+                </div>
+                <div class="form-group">
+                    <label>كلمة سر بوابة أولياء الأمور *</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="studentPortalPassword" required placeholder="مثال: 4821" maxlength="8" style="flex:1;">
+                        <button type="button" onclick="generatePortalPassword()" style="flex-shrink:0; padding:0 14px; border-radius:10px; border:1px solid rgba(168,85,247,.35); background:rgba(124,58,237,.15); color:#c084fc; font-family:'Cairo',sans-serif; font-weight:700; cursor:pointer;">🎲 توليد</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>عنوان السكن</label>
+                    <textarea id="studentAddress" rows="3" placeholder="أدخل العنوان"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>ملاحظات</label>
+                    <textarea id="studentNotes" rows="3" placeholder="أي ملاحظات إضافية"></textarea>
+                </div>
+                <input type="hidden" id="studentId">
+                <button type="submit" class="submit-btn">💾 حفظ البيانات</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="photoFileInput" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event)">
+
+    <!-- Print Cards Modal -->
+    <div id="cardsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="cardsCloseBtn" onclick="closeCardsModal()">&times;</span>
+            <div class="modal-header">
+                <h2>🖨️ كروت باركود الطلاب</h2>
+            </div>
+            <div class="cards-toolbar">
+                <select class="cards-filter-select" id="cardsClassFilter" onchange="renderCards()">
+                    <option value="">جميع الفصول</option>
+                    <option value="الصف الأول الابتدائي">الصف الأول الابتدائي</option>
+                    <option value="الصف الثاني الابتدائي">الصف الثاني الابتدائي</option>
+                    <option value="الصف الثالث الابتدائي">الصف الثالث الابتدائي</option>
+                    <option value="الصف الرابع الابتدائي">الصف الرابع الابتدائي</option>
+                    <option value="الصف الخامس الابتدائي">الصف الخامس الابتدائي</option>
+                    <option value="الصف السادس الابتدائي">الصف السادس الابتدائي</option>
+                    <option value="الصف الأول الإعدادي">الصف الأول الإعدادي</option>
+                    <option value="الصف الثاني الإعدادي">الصف الثاني الإعدادي</option>
+                    <option value="الصف الثالث الإعدادي">الصف الثالث الإعدادي</option>
+                    <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
+                    <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
+                    <option value="الصف الثالث الثانوي">الصف الثالث الثانوي</option>
+                </select>
+                <button class="print-btn" style="padding:9px 18px;font-size:14px;" onclick="window.print()">🖨️ طباعة</button>
+                <span id="cardsCount" style="color:rgba(168,85,247,0.8);font-size:13px;align-self:center;font-weight:700;"></span>
+            </div>
+            <div class="cards-grid" id="cardsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // ── Particles ──
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (6 + Math.random() * 10) + 's';
+            p.style.animationDelay = (Math.random() * 10) + 's';
+            const size = (1 + Math.random() * 3) + 'px';
+            p.style.width = p.style.height = size;
+            const colors = ['#c084fc', '#a855f7', '#3b82f6', '#ec4899'];
+            p.style.background = colors[Math.floor(Math.random() * colors.length)];
+            particlesContainer.appendChild(p);
+        }
+
+        // ── Firebase ──
+const firebaseConfig = {
+    apiKey: "AIzaSyDHM7XE_oYiLpTx_JKgNIgTXTPGX1HHjyU",
+    authDomain: "almahkma-bb197.firebaseapp.com",
+    projectId: "almahkma-bb197",
+    storageBucket: "almahkma-bb197.firebasestorage.app",
+    messagingSenderId: "621299576828",
+    appId: "1:621299576828:web:e6bbeb87473a36ebb2cc79"
+};
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function setFbStatus(state, msg) {
+            const bar = document.getElementById('firebaseStatusBar');
+            const dot = document.getElementById('firebaseDot');
+            const txt = document.getElementById('firebaseMsg');
+            if (!bar) return;
+            bar.className = 'firebase-bar ' + state;
+            dot.className = 'firebase-dot ' + state;
+            txt.textContent = msg;
+        }
+
+        // ── State ──
+        let students = [];
+        let teachers = [];
+        let editingStudentId = null;
+
+        // ── Teachers Listener (لتعبئة قائمة اختيار المدرس) ──
+        function startTeachersListener() {
+            db.collection('teachers').doc('data').onSnapshot((snap) => {
+                teachers = snap.exists ? (snap.data().teachers || []) : [];
+                populateTeacherSelect();
+                displayStudents();
+            }, (err) => {
+                console.error('Teachers listener error:', err);
+            });
+        }
+
+        function populateTeacherSelect() {
+            const sel = document.getElementById('studentTeacher');
+            if (!sel) return;
+            const current = sel.value;
+            sel.innerHTML = '<option value="">اختر المدرس</option>' +
+                teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            if (current) sel.value = current;
+        }
+
+        function getTeacherName(teacherId) {
+            const t = teachers.find(t => String(t.id) === String(teacherId));
+            return t ? t.name : '-';
+        }
+
+        // ── Save ──
+        async function saveToFirestore() {
+            setFbStatus('saving', '💾 جاري الحفظ على Firebase...');
+            try {
+                await db.collection('students').doc('data').set({ students });
+                setFbStatus('connected', '🔥 Firebase — تم الحفظ ✔');
+            } catch(e) {
+                console.error('Save error:', e);
+                setFbStatus('error', '❌ خطأ في الحفظ — ' + e.message);
+            }
+        }
+
+        // ── Listener ──
+        function startListener() {
+            db.collection('students').doc('data').onSnapshot((snap) => {
+                students = snap.exists ? (snap.data().students || []) : [];
+                setFbStatus('connected', '🔥 Firebase متصل — البيانات محدّثة لحظياً');
+                displayStudents();
+                updateStats();
+            }, (err) => {
+                console.error('Listener error:', err);
+                setFbStatus('error', '❌ خطأ في الاتصال — تأكد من Firebase Rules');
+            });
+        }
+
+        // ── Helpers ──
+        function getSubjectName(subject) {
+            const subjects = { 'math':'رياضيات','science':'علوم','arabic':'عربي','english':'إنجليزي','studies':'دراسات' };
+            return subjects[subject] || subject;
+        }
+        function getSubjectsDisplay(subjectsArray) {
+            if (!subjectsArray || !Array.isArray(subjectsArray)) return '-';
+            return subjectsArray.map(s => getSubjectName(s)).join(', ');
+        }
+        function calculateAge() {
+            const birthdate = document.getElementById('studentBirthdate').value;
+            if (birthdate) {
+                const today = new Date(), birth = new Date(birthdate);
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+                document.getElementById('studentAge').value = age + ' سنة';
+            }
+        }
+
+        // ── Display ──
+        function displayStudents(list) {
+            const data = list || students;
+            const tbody = document.getElementById('studentsTableBody');
+            const emptyState = document.getElementById('emptyState');
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+            emptyState.style.display = 'none';
+            tbody.innerHTML = data.map(student => `
+                <tr>
+                    <td>
+                        ${student.photo
+                            ? `<img src="${student.photo}" class="student-thumb" style="margin-left:8px;">`
+                            : `<span class="student-thumb-placeholder">👤</span>`}
+                        <strong style="vertical-align:middle;margin-right:6px;color:rgba(255,255,255,0.85);">${student.name}</strong>
+                    </td>
+                    <td>${student.class}</td>
+                    <td>${getTeacherName(student.teacherId)}</td>
+                    <td>${getSubjectsDisplay(student.subjects)}</td>
+                    <td>${new Date(student.birthdate).toLocaleDateString('ar-EG')}</td>
+                    <td>${student.age}</td>
+                    <td>${student.phone}</td>
+                    <td class="action-btns">
+                        <button class="photo-btn" onclick="triggerPhotoUpload('${student.id}')" title="رفع صورة">📸</button>
+                        <button class="edit-btn" onclick="editStudent('${student.id}')">✏️ تعديل</button>
+                        <button class="delete-btn" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('totalStudentsCount').textContent = students.length;
+            const uniqueClasses = [...new Set(students.map(s => s.class))];
+            document.getElementById('classesCount').textContent = uniqueClasses.length;
+            const allSubjects = new Set();
+            students.forEach(s => { if (s.subjects) s.subjects.forEach(sub => allSubjects.add(sub)); });
+            document.getElementById('subjectsCount').textContent = allSubjects.size;
+        }
+
+        // ── Modal ──
+        function openAddModal() {
+            editingStudentId = null;
+            document.getElementById('modalTitle').textContent = '➕ إضافة طالب جديد';
+            document.getElementById('studentForm').reset();
+            document.getElementById('studentAge').value = '';
+            document.getElementById('studentPortalPassword').value = String(Math.floor(1000 + Math.random() * 9000));
+            document.querySelectorAll('input[name="subjects"]').forEach(cb => cb.checked = false);
+            document.getElementById('subjectsError').style.display = 'none';
+            document.getElementById('nameSuggestions').style.display = 'none';
+            document.getElementById('nameDuplicateWarning').style.display = 'none';
+            document.getElementById('studentModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function generatePortalPassword() {
+            document.getElementById('studentPortalPassword').value = String(Math.floor(1000 + Math.random() * 9000));
+        }
+
+        function editStudent(id) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+            editingStudentId = id;
+            document.getElementById('modalTitle').textContent = '✏️ تعديل بيانات الطالب';
+            document.getElementById('studentId').value        = student.id;
+            document.getElementById('studentName').value      = student.name;
+            document.getElementById('studentClass').value     = student.class;
+            document.getElementById('studentTeacher').value   = student.teacherId || '';
+            document.getElementById('studentBirthdate').value = student.birthdate;
+            document.getElementById('studentAge').value       = student.age;
+            document.getElementById('studentPhone').value     = student.phone;
+            document.getElementById('studentPortalPassword').value = student.portalPassword || String(Math.floor(1000 + Math.random() * 9000));
+            document.getElementById('studentAddress').value   = student.address || '';
+            document.getElementById('studentNotes').value     = student.notes || '';
+            document.querySelectorAll('input[name="subjects"]').forEach(cb => {
+                cb.checked = student.subjects && student.subjects.includes(cb.value);
+            });
+            document.getElementById('nameSuggestions').style.display = 'none';
+            document.getElementById('nameDuplicateWarning').style.display = 'none';
+            document.getElementById('studentModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('studentModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('studentForm').reset();
+            document.querySelectorAll('input[name="subjects"]').forEach(cb => cb.checked = false);
+            document.getElementById('subjectsError').style.display = 'none';
+            editingStudentId = null;
+        }
+
+        function renderNameSuggestions() {
+            const input = document.getElementById('studentName');
+            const box = document.getElementById('nameSuggestions');
+            const warn = document.getElementById('nameDuplicateWarning');
+            const typed = input.value.trim();
+
+            if (!typed) { box.style.display = 'none'; warn.style.display = 'none'; return; }
+
+            const matches = students.filter(s =>
+                s.id !== editingStudentId &&
+                (s.name || '').toLowerCase().includes(typed.toLowerCase())
+            ).slice(0, 8);
+
+            const exactDuplicate = students.find(s =>
+                s.id !== editingStudentId &&
+                (s.name || '').trim().toLowerCase() === typed.toLowerCase()
+            );
+
+            if (exactDuplicate) {
+                warn.textContent = `⚠️ يوجد طالب بنفس الاسم بالفعل (${exactDuplicate.class}) — تأكد إنه مش نفس الطالب قبل الإضافة`;
+                warn.style.display = 'block';
+            } else {
+                warn.style.display = 'none';
+            }
+
+            if (matches.length === 0) { box.style.display = 'none'; return; }
+
+            box.innerHTML = matches.map(s => `
+                <div onclick="document.getElementById('studentName').value='${s.name.replace(/'/g,"\\'")}'; renderNameSuggestions();"
+                     style="padding:10px 14px;cursor:pointer;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;gap:10px;"
+                     onmouseover="this.style.background='rgba(168,85,247,.15)'" onmouseout="this.style.background='transparent'">
+                    <span>${s.name}</span>
+                    <span style="color:rgba(255,255,255,.4);font-size:11.5px;">${s.class}</span>
+                </div>
+            `).join('');
+            box.style.display = 'block';
+        }
+
+        function saveStudent(event) {
+            event.preventDefault();
+            const selectedSubjects = Array.from(document.querySelectorAll('input[name="subjects"]:checked')).map(cb => cb.value);
+            if (selectedSubjects.length === 0) {
+                document.getElementById('subjectsError').style.display = 'block';
+                return;
+            }
+            document.getElementById('subjectsError').style.display = 'none';
+
+            const typedName = document.getElementById('studentName').value.trim();
+            const duplicate = students.find(s =>
+                s.id !== editingStudentId &&
+                (s.name || '').trim().toLowerCase() === typedName.toLowerCase()
+            );
+            if (duplicate) {
+                alert(`❌ الطالب "${typedName}" موجود بالفعل في الصف (${duplicate.class}).\n\nمينفعش تضيف طالب بنفس الاسم مرتين. لو ده طالب تاني فعلاً بنفس الاسم بالصدفة، ينفع تفرق بينهم بإضافة حرف من اسم العيلة أو رقم في الآخر.`);
+                return;
+            }
+
+            const teacherId = document.getElementById('studentTeacher').value;
+            const student = {
+                id:          editingStudentId || Date.now().toString(),
+                name:        document.getElementById('studentName').value,
+                class:       document.getElementById('studentClass').value,
+                subjects:    selectedSubjects,
+                birthdate:   document.getElementById('studentBirthdate').value,
+                age:         document.getElementById('studentAge').value,
+                teacherId:   teacherId,
+                teacherName: getTeacherName(teacherId),
+                phone:       document.getElementById('studentPhone').value,
+                portalPassword: document.getElementById('studentPortalPassword').value.trim(),
+                address:     document.getElementById('studentAddress').value,
+                notes:       document.getElementById('studentNotes').value,
+                createdAt: editingStudentId ? students.find(s => s.id === editingStudentId)?.createdAt : new Date().toISOString()
+            };
+            if (editingStudentId) {
+                const index = students.findIndex(s => s.id === editingStudentId);
+                students[index] = student;
+            } else {
+                students.push(student);
+            }
+            saveToFirestore();
+            closeModal();
+            alert(editingStudentId ? 'تم تحديث بيانات الطالب بنجاح ✅' : 'تم إضافة الطالب بنجاح ✅');
+        }
+
+        function deleteStudent(id) {
+            if (confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
+                students = students.filter(s => s.id !== id);
+                saveToFirestore();
+                alert('تم حذف الطالب بنجاح ✅');
+            }
+        }
+
+        function filterStudents() {
+            const searchTerm    = document.getElementById('searchInput').value.toLowerCase();
+            const classFilter   = document.getElementById('classFilter').value;
+            const subjectFilter = document.getElementById('subjectFilter').value;
+            const filtered = students.filter(student => {
+                const matchesSearch  = student.name.toLowerCase().includes(searchTerm) || student.phone.includes(searchTerm);
+                const matchesClass   = !classFilter   || student.class === classFilter;
+                const matchesSubject = !subjectFilter  || (student.subjects && student.subjects.includes(subjectFilter));
+                return matchesSearch && matchesClass && matchesSubject;
+            });
+            displayStudents(filtered);
+        }
+
+        // ── Cards ──
+        function openCardsModal() {
+            document.getElementById('cardsModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            renderCards();
+        }
+        function closeCardsModal() {
+            document.getElementById('cardsModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function renderCards() {
+            const classFilter = document.getElementById('cardsClassFilter').value;
+            const grid = document.getElementById('cardsGrid');
+            const filtered = classFilter ? students.filter(s => s.class === classFilter) : students;
+            document.getElementById('cardsCount').textContent = `${filtered.length} طالب`;
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4);padding:40px;grid-column:1/-1;">لا يوجد طلاب</p>';
+                return;
+            }
+            grid.innerHTML = filtered.map(st => {
+                const passKey = st.portalPassword || String(st.id).slice(-4);
+                return `
+                <div class="student-card" data-student-id="${st.id}">
+                    <button class="card-print-single-btn" onclick="printSingleCard('${st.id}')" title="طباعة هذا الكارت فقط">🖨️</button>
+                    <div class="card-stripe">
+                        <span class="card-stripe-brand">سنتر المحكمة</span>
+                        <span class="card-stripe-logo">🎓</span>
+                    </div>
+                    <div class="card-body">
+                        ${st.photo ? `<img src="${st.photo}" class="card-photo" />` : `<div class="card-photo-placeholder">👤</div>`}
+                        <div class="card-info">
+                            <div class="card-label">الإسم</div>
+                            <div class="card-name">${st.name}</div>
+                            <div class="card-class">${st.class}</div>
+                            <div class="card-field">
+                                <span class="card-field-label">الباركود :</span>
+                                <span class="card-field-value">${st.id}</span>
+                            </div>
+                            <div class="card-field">
+                                <span class="card-field-label">كلمة السر :</span>
+                                <span class="card-field-value">${passKey}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-barcode-section">
+                        <svg id="bc-${st.id}" class="card-barcode-img"></svg>
+                        <div class="card-code">${st.id}</div>
+                    </div>
+                    <div class="card-footer">سنتر المحكمة &copy; 2026</div>
+                </div>`;
+            }).join('');
+            setTimeout(() => {
+                filtered.forEach(st => {
+                    try {
+                        JsBarcode(`#bc-${st.id}`, String(st.id), { format:'CODE128', width:1.6, height:44, displayValue:false, margin:3, background:'transparent', lineColor:'#1e0035' });
+                    } catch(e) { console.warn('Barcode error for', st.id, e); }
+                });
+            }, 50);
+        }
+
+        function printSingleCard(id) {
+            document.querySelectorAll('.student-card').forEach(c => c.classList.remove('print-only-card'));
+            const card = document.querySelector(`.student-card[data-student-id="${id}"]`);
+            if (card) card.classList.add('print-only-card');
+            document.body.classList.add('printing-single');
+            window.print();
+        }
+        window.onafterprint = function() {
+            document.body.classList.remove('printing-single');
+            document.querySelectorAll('.student-card').forEach(c => c.classList.remove('print-only-card'));
+        };
+
+        // ── Photo Upload ──
+        let _uploadingStudentId = null;
+        function triggerPhotoUpload(studentId) {
+            _uploadingStudentId = studentId;
+            document.getElementById('photoFileInput').click();
+        }
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !_uploadingStudentId) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result;
+                const idx = students.findIndex(s => s.id === _uploadingStudentId);
+                if (idx === -1) return;
+                students[idx].photo = base64;
+                await saveToFirestore();
+                displayStudents();
+                if (document.getElementById('cardsModal').style.display === 'block') renderCards();
+                event.target.value = '';
+                _uploadingStudentId = null;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('studentModal')) closeModal();
+            if (event.target === document.getElementById('cardsModal')) closeCardsModal();
+        };
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') { closeModal(); closeCardsModal(); }
+        });
+
+        // ── Init ──
+        setFbStatus('connecting', '🔌 جاري الاتصال بـ Firebase...');
+        startListener();
+        startTeachersListener();
+    </script>
+
+    <script>
+        // ══════════════════════════════════════════
+        //  صلاحيات المستخدم — مدخل بيانات لا يقدر يعدّل أو يحذف
+        // ══════════════════════════════════════════
+        (function() {
+            const role = sessionStorage.getItem('userRole');
+            if (role === 'admin') return; // الأدمن يشوف كل حاجة عادي
+
+            function hideAdminOnlyButtons() {
+                document.querySelectorAll('[onclick]').forEach(el => {
+                    const oc = el.getAttribute('onclick') || '';
+                    if (/^\s*(edit|delete)[A-Za-z]*\(/.test(oc)) {
+                        el.style.display = 'none';
+                    }
+                });
+            }
+            hideAdminOnlyButtons();
+            new MutationObserver(hideAdminOnlyButtons).observe(document.body, { childList: true, subtree: true });
+        })();
+    </script>
+</body>
+</html>

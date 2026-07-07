@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بياناتي - سنتر المحكمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --purple-deep: #0d0014;
+            --purple-bright: #7c3aed;
+            --purple-glow: #a855f7;
+            --purple-light: #c084fc;
+            --blue-accent: #3b82f6;
+            --glass-border: rgba(168, 85, 247, 0.2);
+            --card-bg: rgba(26, 0, 48, 0.7);
+        }
+        body {
+            font-family:'Cairo',sans-serif;
+            background: var(--purple-deep);
+            min-height:100vh; padding:20px; position:relative; overflow-x:hidden;
+        }
+        .bg-gradient {
+            position:fixed; inset:0; z-index:0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.3) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168,85,247,0.18) 0%, transparent 50%),
+                linear-gradient(180deg, #0d0014 0%, #12001f 40%, #0a0018 100%);
+        }
+        .container { position:relative; z-index:10; max-width:900px; margin:0 auto; }
+
+        .header {
+            background: var(--card-bg);
+            border:1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            padding:22px 26px; border-radius:18px; margin-bottom:22px;
+            display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .header h1 {
+            font-size:22px; font-weight:900;
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-glow), var(--blue-accent));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+        }
+        .header p { color:rgba(255,255,255,0.45); font-size:13px; margin-top:4px; }
+
+        .btn-logout {
+            background: rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3);
+            color:#f87171; padding:10px 20px; border-radius:10px; font-family:'Cairo',sans-serif;
+            font-weight:700; font-size:14px; cursor:pointer; transition:.2s;
+        }
+        .btn-logout:hover { background: rgba(239,68,68,0.25); }
+
+        .card {
+            background: var(--card-bg); border:1px solid var(--glass-border);
+            backdrop-filter: blur(16px); border-radius:18px; padding:22px 26px; margin-bottom:20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        }
+        .card h2 { font-size:17px; color:var(--purple-light); margin-bottom:16px; font-weight:900; }
+
+        .profile-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;
+        }
+        .profile-item {
+            background: rgba(255,255,255,0.04); border:1px solid rgba(168,85,247,0.12);
+            border-radius:12px; padding:14px 16px;
+        }
+        .profile-item .lbl { font-size:12px; color:rgba(255,255,255,0.4); margin-bottom:6px; }
+        .profile-item .val { font-size:15px; color:#fff; font-weight:700; }
+
+        .subject-tag {
+            display:inline-block; background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3);
+            color:var(--purple-light); padding:4px 12px; border-radius:20px; font-size:12px; margin:3px 4px 0 0;
+        }
+
+        .grade-btn {
+            display:flex; justify-content:space-between; align-items:center;
+            width:100%; padding:14px 18px; margin-bottom:10px;
+            background: rgba(255,255,255,0.04); border:1px solid rgba(168,85,247,0.18);
+            border-radius:12px; color:#fff; font-family:'Cairo',sans-serif; font-size:15px; font-weight:700;
+            cursor:pointer; transition:.2s;
+        }
+        .grade-btn:hover { background:rgba(168,85,247,0.12); border-color:var(--purple-glow); }
+        .grade-btn .count { color:var(--purple-light); font-size:13px; font-weight:400; }
+
+        .student-row {
+            background: rgba(255,255,255,0.04); border:1px solid rgba(168,85,247,0.12);
+            border-radius:10px; padding:12px 16px; margin-bottom:8px;
+        }
+        .student-row strong { color:#fff; font-size:15px; }
+        .student-row .meta { font-size:12px; color:rgba(255,255,255,0.5); margin-top:4px; }
+
+        .back-btn {
+            background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+            color:#fff; padding:9px 18px; border-radius:10px; font-family:'Cairo',sans-serif;
+            font-size:13px; font-weight:700; cursor:pointer; margin-bottom:14px;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.15); }
+
+        .empty { text-align:center; padding:30px; color:rgba(255,255,255,0.35); }
+        .loading { text-align:center; padding:30px; color:rgba(255,255,255,0.4); }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>👋 أهلاً <span id="teacherNameHeader">...</span></h1>
+                <p>سنتر المحكمة — بياناتك وطلابك (عرض فقط)</p>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 خروج</button>
+        </div>
+
+        <div class="card">
+            <h2>📋 بياناتي</h2>
+            <div id="profileArea" class="loading">جاري تحميل البيانات...</div>
+        </div>
+
+        <div class="card">
+            <h2>👨‍🎓 طلابي</h2>
+            <div id="gradesArea"></div>
+            <div id="studentsArea" style="display:none;">
+                <button class="back-btn" onclick="showGrades()">⬅ رجوع للسنوات</button>
+                <div id="studentsInner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+        // ── تأكيد تسجيل الدخول ──
+        if (sessionStorage.getItem('teacherLoggedIn') !== 'true') {
+            window.location.href = 'teacher_login.html';
+        }
+        const myTeacherId = sessionStorage.getItem('teacherId');
+        document.getElementById('teacherNameHeader').textContent = sessionStorage.getItem('teacherName') || '';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHM7XE_oYiLpTx_JKgNIgTXTPGX1HHjyU",
+            authDomain: "almahkma-bb197.firebaseapp.com",
+            projectId: "almahkma-bb197",
+            storageBucket: "almahkma-bb197.firebasestorage.app",
+            messagingSenderId: "621299576828",
+            appId: "1:621299576828:web:e6bbeb87473a36ebb2cc79"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const subjectNames = {
+            math:'رياضيات', arabic:'لغة عربية', english:'لغة إنجليزية',
+            science:'علوم', social:'دراسات اجتماعية', religion:'تربية دينية', computer:'حاسب آلي'
+        };
+
+        let myStudents = [];
+
+        function logout() {
+            sessionStorage.removeItem('teacherLoggedIn');
+            sessionStorage.removeItem('teacherId');
+            sessionStorage.removeItem('teacherName');
+            window.location.href = 'teacher_login.html';
+        }
+
+        // ── بيانات المدرس نفسه ──
+        db.collection('teachers').doc('data').onSnapshot((snap) => {
+            const teachers = snap.exists ? (snap.data().teachers || []) : [];
+            const me = teachers.find(t => String(t.id) === String(myTeacherId));
+            const area = document.getElementById('profileArea');
+            if (!me) {
+                area.innerHTML = '<p class="empty">تعذر العثور على بياناتك، تواصل مع الإدارة</p>';
+                return;
+            }
+            document.getElementById('teacherNameHeader').textContent = me.name;
+            area.innerHTML = `
+                <div class="profile-grid">
+                    <div class="profile-item"><div class="lbl">الاسم</div><div class="val">${me.name}</div></div>
+                    <div class="profile-item"><div class="lbl">رقم الهاتف</div><div class="val">${me.phone || '-'}</div></div>
+                    <div class="profile-item"><div class="lbl">الراتب</div><div class="val">${me.salary ? me.salary + ' جنيه' : '-'}</div></div>
+                    <div class="profile-item"><div class="lbl">الحالة</div><div class="val">${me.active === false ? 'غير نشط' : 'نشط ✅'}</div></div>
+                </div>
+                <div style="margin-top:14px;">
+                    <div class="lbl" style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;">المواد التي يدرّسها</div>
+                    ${(me.subjects||[]).map(s => `<span class="subject-tag">${subjectNames[s]||s}</span>`).join('') || '<span style="color:rgba(255,255,255,0.4);">-</span>'}
+                </div>
+                ${me.notes ? `<div style="margin-top:14px;"><div class="lbl" style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;">ملاحظات</div><div style="color:rgba(255,255,255,0.7);">${me.notes}</div></div>` : ''}
+            `;
+        }, (err) => {
+            console.error(err);
+            document.getElementById('profileArea').innerHTML = '<p class="empty">❌ خطأ في الاتصال بقاعدة البيانات</p>';
+        });
+
+        // ── طلاب المدرس ──
+        db.collection('students').doc('data').onSnapshot((snap) => {
+            const allStudents = snap.exists ? (snap.data().students || []) : [];
+            myStudents = allStudents.filter(s => String(s.teacherId) === String(myTeacherId));
+            showGrades();
+        }, (err) => {
+            console.error(err);
+            document.getElementById('gradesArea').innerHTML = '<p class="empty">❌ خطأ في تحميل بيانات الطلاب</p>';
+        });
+
+        function showGrades() {
+            document.getElementById('studentsArea').style.display = 'none';
+            const area = document.getElementById('gradesArea');
+            area.style.display = 'block';
+
+            const grades = [...new Set(myStudents.map(s => s.class))].filter(Boolean);
+            if (grades.length === 0) {
+                area.innerHTML = '<p class="empty">لا يوجد طلاب مسجلين معك حتى الآن</p>';
+                return;
+            }
+            area.innerHTML = grades.map(g => {
+                const count = myStudents.filter(s => s.class === g).length;
+                return `<button class="grade-btn" onclick="showGradeStudents('${g.replace(/'/g, "\\'")}')">
+                    <span>${g}</span><span class="count">${count} طالب</span>
+                </button>`;
+            }).join('');
+        }
+
+        function showGradeStudents(grade) {
+            document.getElementById('gradesArea').style.display = 'none';
+            document.getElementById('studentsArea').style.display = 'block';
+            const list = myStudents.filter(s => s.class === grade);
+            const inner = document.getElementById('studentsInner');
+            if (list.length === 0) {
+                inner.innerHTML = '<p class="empty">لا يوجد طلاب في هذه السنة</p>';
+                return;
+            }
+            inner.innerHTML = `<h3 style="color:rgba(255,255,255,0.8);margin-bottom:12px;">${grade} — ${list.length} طالب</h3>` +
+                list.map(s => `
+                    <div class="student-row">
+                        <strong>${s.name}</strong>
+                        <div class="meta">📱 ${s.phone || '-'} &nbsp;•&nbsp; 📚 ${(s.subjects||[]).map(sub => subjectNames[sub]||sub).join(', ') || '-'}</div>
+                    </div>
+                `).join('');
+        }
+    </script>
+</body>
+</html>
