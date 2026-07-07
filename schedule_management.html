@@ -323,7 +323,8 @@
                         <option value="english">لغة إنجليزية</option>
                         <option value="science">علوم</option>
                         <option value="religion">تربية دينية</option>
-                        <option value="computer">توكنولوجيا</option>
+                        <option value="computer">حاسب آلي</option>
+                        <option value="technology">تكنولوجيا</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -508,7 +509,7 @@
             return `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`;
         }
 
-        const subjectNames = { math:'رياضيات', arabic:'لغة عربية', english:'لغة إنجليزية', science:'علوم', social:'دراسات اجتماعية', religion:'تربية دينية', computer:'توكنولوجيا' };
+        const subjectNames = { math:'رياضيات', arabic:'لغة عربية', english:'لغة إنجليزية', science:'علوم', social:'دراسات اجتماعية', religion:'تربية دينية', computer:'حاسب آلي', technology:'تكنولوجيا' };
         // ── Teachers from Firebase ──
         let teachersList = []; // array of teacher objects {id, name, active, ...}
 

@@ -688,7 +688,7 @@
 
         function renderTeachersSection() {
             const c = document.getElementById('teachersSection');
-            const subjectNames = { math:'رياضيات', arabic:'لغة عربية', english:'لغة إنجليزية', science:'علوم', social:'دراسات اجتماعية', religion:'تربية دينية', computer:'حاسب آلي' };
+            const subjectNames = { math:'رياضيات', arabic:'لغة عربية', english:'لغة إنجليزية', science:'علوم', social:'دراسات اجتماعية', religion:'تربية دينية', computer:'حاسب آلي', technology:'تكنولوجيا' };
             const active = teachers.filter(t => t.active);
             if (!active.length) { c.innerHTML = '<div class="empty">لا يوجد مدرسين نشطين</div>'; return; }
             c.innerHTML = '';
