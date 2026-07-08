@@ -324,6 +324,22 @@
         #subjectsCheckboxes label:hover { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.3); }
         #subjectsCheckboxes input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--purple-glow); }
 
+        #teachersCheckboxes {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            padding: 14px; border: 1px solid rgba(168,85,247,0.25); border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+        }
+        #teachersCheckboxes label {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            padding: 7px 10px; border-radius: 8px;
+            border: 1px solid rgba(168,85,247,0.12);
+            background: rgba(168,85,247,0.06); color: rgba(255,255,255,0.75);
+            font-size: 13px; font-weight: 700; transition: all 0.2s; margin: 0;
+        }
+        #teachersCheckboxes label:hover { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.3); }
+        #teachersCheckboxes input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--purple-glow); }
+        #teachersCheckboxes .no-teachers-msg { color: rgba(255,255,255,0.5); font-size: 13px; padding: 4px; }
+
         .submit-btn {
             background: linear-gradient(135deg, var(--purple-bright), var(--purple-glow));
             color: white; border: none; padding: 14px 40px; border-radius: 10px;
@@ -526,6 +542,8 @@
             .form-row { grid-template-columns: 1fr; gap: 0; }
             #subjectsCheckboxes { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
             #subjectsCheckboxes label { font-size: 12px; padding: 6px 8px; }
+            #teachersCheckboxes { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
+            #teachersCheckboxes label { font-size: 12px; padding: 6px 8px; }
             .submit-btn { padding: 13px; font-size: 14.5px; }
 
             .cards-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
@@ -540,6 +558,7 @@
             .page-header > div { flex-direction: column; }
             .btn-primary, .add-student-btn, .print-btn { width: 100%; }
             #subjectsCheckboxes { grid-template-columns: 1fr; }
+            #teachersCheckboxes { grid-template-columns: 1fr; }
         }
 
         @media print {
@@ -745,10 +764,9 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>المدرس *</label>
-                    <select id="studentTeacher" required>
-                        <option value="">اختر المدرس</option>
-                    </select>
+                    <label>المدرسين * (يمكن اختيار أكثر من مدرس)</label>
+                    <div id="teachersCheckboxes"></div>
+                    <small id="teachersError" style="color:#f87171;display:none;margin-top:5px;">يجب اختيار مدرس واحد على الأقل</small>
                 </div>
                 <div class="form-group">
                     <label>رقم الهاتف *</label>
@@ -863,17 +881,32 @@ const firebaseConfig = {
         }
 
         function populateTeacherSelect() {
-            const sel = document.getElementById('studentTeacher');
-            if (!sel) return;
-            const current = sel.value;
-            sel.innerHTML = '<option value="">اختر المدرس</option>' +
-                teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-            if (current) sel.value = current;
+            const box = document.getElementById('teachersCheckboxes');
+            if (!box) return;
+            // احتفظ بالاختيارات الحالية قبل إعادة الرسم
+            const currentlyChecked = Array.from(document.querySelectorAll('input[name="teachers"]:checked')).map(cb => cb.value);
+            if (teachers.length === 0) {
+                box.innerHTML = '<div class="no-teachers-msg">لا يوجد مدرسين مضافين بعد</div>';
+                return;
+            }
+            box.innerHTML = teachers.map(t => `
+                <label><input type="checkbox" name="teachers" value="${t.id}"><span>${t.name}</span></label>
+            `).join('');
+            if (currentlyChecked.length) {
+                document.querySelectorAll('input[name="teachers"]').forEach(cb => {
+                    cb.checked = currentlyChecked.includes(cb.value);
+                });
+            }
         }
 
         function getTeacherName(teacherId) {
             const t = teachers.find(t => String(t.id) === String(teacherId));
             return t ? t.name : '-';
+        }
+
+        function getTeachersDisplay(teacherIds) {
+            if (!teacherIds || !Array.isArray(teacherIds) || teacherIds.length === 0) return '-';
+            return teacherIds.map(id => getTeacherName(id)).join('، ');
         }
 
         // ── Save ──
@@ -941,7 +974,7 @@ const firebaseConfig = {
                         <strong style="vertical-align:middle;margin-right:6px;color:rgba(255,255,255,0.85);">${student.name}</strong>
                     </td>
                     <td>${student.class}</td>
-                    <td>${getTeacherName(student.teacherId)}</td>
+                    <td>${getTeachersDisplay(student.teacherIds || (student.teacherId ? [student.teacherId] : []))}</td>
                     <td>${getSubjectsDisplay(student.subjects)}</td>
                     <td>${new Date(student.birthdate).toLocaleDateString('ar-EG')}</td>
                     <td>${student.age}</td>
@@ -973,6 +1006,8 @@ const firebaseConfig = {
             document.getElementById('studentPortalPassword').value = String(Math.floor(1000 + Math.random() * 9000));
             document.querySelectorAll('input[name="subjects"]').forEach(cb => cb.checked = false);
             document.getElementById('subjectsError').style.display = 'none';
+            document.querySelectorAll('input[name="teachers"]').forEach(cb => cb.checked = false);
+            document.getElementById('teachersError').style.display = 'none';
             document.getElementById('nameSuggestions').style.display = 'none';
             document.getElementById('nameDuplicateWarning').style.display = 'none';
             document.getElementById('studentModal').style.display = 'block';
@@ -991,7 +1026,6 @@ const firebaseConfig = {
             document.getElementById('studentId').value        = student.id;
             document.getElementById('studentName').value      = student.name;
             document.getElementById('studentClass').value     = student.class;
-            document.getElementById('studentTeacher').value   = student.teacherId || '';
             document.getElementById('studentBirthdate').value = student.birthdate;
             document.getElementById('studentAge').value       = student.age;
             document.getElementById('studentPhone').value     = student.phone;
@@ -1000,6 +1034,10 @@ const firebaseConfig = {
             document.getElementById('studentNotes').value     = student.notes || '';
             document.querySelectorAll('input[name="subjects"]').forEach(cb => {
                 cb.checked = student.subjects && student.subjects.includes(cb.value);
+            });
+            const studentTeacherIds = student.teacherIds || (student.teacherId ? [student.teacherId] : []);
+            document.querySelectorAll('input[name="teachers"]').forEach(cb => {
+                cb.checked = studentTeacherIds.includes(cb.value);
             });
             document.getElementById('nameSuggestions').style.display = 'none';
             document.getElementById('nameDuplicateWarning').style.display = 'none';
@@ -1013,6 +1051,8 @@ const firebaseConfig = {
             document.getElementById('studentForm').reset();
             document.querySelectorAll('input[name="subjects"]').forEach(cb => cb.checked = false);
             document.getElementById('subjectsError').style.display = 'none';
+            document.querySelectorAll('input[name="teachers"]').forEach(cb => cb.checked = false);
+            document.getElementById('teachersError').style.display = 'none';
             editingStudentId = null;
         }
 
@@ -1063,6 +1103,13 @@ const firebaseConfig = {
             }
             document.getElementById('subjectsError').style.display = 'none';
 
+            const selectedTeachers = Array.from(document.querySelectorAll('input[name="teachers"]:checked')).map(cb => cb.value);
+            if (selectedTeachers.length === 0) {
+                document.getElementById('teachersError').style.display = 'block';
+                return;
+            }
+            document.getElementById('teachersError').style.display = 'none';
+
             const typedName = document.getElementById('studentName').value.trim();
             const duplicate = students.find(s =>
                 s.id !== editingStudentId &&
@@ -1073,7 +1120,6 @@ const firebaseConfig = {
                 return;
             }
 
-            const teacherId = document.getElementById('studentTeacher').value;
             const student = {
                 id:          editingStudentId || Date.now().toString(),
                 name:        document.getElementById('studentName').value,
@@ -1081,8 +1127,8 @@ const firebaseConfig = {
                 subjects:    selectedSubjects,
                 birthdate:   document.getElementById('studentBirthdate').value,
                 age:         document.getElementById('studentAge').value,
-                teacherId:   teacherId,
-                teacherName: getTeacherName(teacherId),
+                teacherIds:   selectedTeachers,
+                teacherNames: selectedTeachers.map(id => getTeacherName(id)),
                 phone:       document.getElementById('studentPhone').value,
                 portalPassword: document.getElementById('studentPortalPassword').value.trim(),
                 address:     document.getElementById('studentAddress').value,

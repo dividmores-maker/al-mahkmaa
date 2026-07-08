@@ -979,10 +979,10 @@
                     <span>✅ جاهز — مرر كارت الطالب على القارئ لتسجيل حضوره</span>
                 </div>
                 <p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px;">
-                    القارئ يعمل مباشرة بدون أي إعداد — فقط وصّله بـ USB وابدأ.
+                    القارئ يعمل مباشرة بدون أي إعداد — فقط وصّله بـ USB ومرّر كارت الطالب المطبوع من صفحة "إدارة الطلاب".
                 </p>
                 <div style="margin-bottom:12px;">
-                    <button class="btn" style="font-size:13px;padding:8px 16px;background:linear-gradient(135deg,#065f46,#22c55e);color:white;" onclick="showCodeMapModal()">🪪 إدارة باركود الطلاب</button>
+                    <button class="btn" style="font-size:13px;padding:8px 16px;background:linear-gradient(135deg,#065f46,#22c55e);color:white;" onclick="showCodeMapModal()">🪪 ربط باركود يدوي (اختياري)</button>
                     <span id="mappingCount" style="margin-right:10px;color:#444;font-size:13px;font-weight:bold;"></span>
                 </div>
                 <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:6px;">📋 آخر الكروت المسجلة:</div>
@@ -1018,7 +1018,7 @@
                 <h2>🪪 باركود كروت الطلاب</h2>
                 <button class="close-btn" onclick="closeModal('codeMapModal')">&times;</button>
             </div>
-            <p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:15px;">كل طالب له باركود على كارته. اربط رقم الباركود باسم الطالب هنا.</p>
+            <p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:15px;">كروت الطلاب المطبوعة من صفحة "إدارة الطلاب" بتشتغل تلقائي من غير أي ربط. استخدم الشاشة دي بس لو عندك باركودات تانية (مش من كروت الطلاب) وعاوز تربطها يدوياً باسم طالب.</p>
             <div id="codeMapList" style="max-height:300px;overflow-y:auto;margin-bottom:15px;"></div>
             <div style="background:rgba(255,255,255,.05);border:1px solid rgba(212,175,55,.15);border-radius:10px;padding:15px;">
                 <div style="font-weight:bold;margin-bottom:10px;color:#ffd700;">➕ إضافة / تعديل</div>
@@ -2420,28 +2420,37 @@
         async function processBarcodeInput(code) {
             const now = new Date();
             const timeShort = now.toTimeString().slice(0, 5);
-            const map = await loadMappings();
-            const studentName = map[String(code)];
+            const session = sessions.find(s => s.id === currentSessionId);
+            if (!session) return;
+
+            // 1) الطريقة الأساسية: الكود المطبوع على الكارت هو نفسه رقم الطالب (id)
+            //    اللي بيتولّد بيه الباركود أصلاً في صفحة إدارة الطلاب
+            let student = session.students.find(s => String(s.id) === String(code));
+            let studentName = student ? student.name : null;
+
+            // 2) لو مفيش تطابق مباشر، جرّب الربط اليدوي (للتوافق مع باركودات قديمة اتربطت يدوياً)
+            if (!student) {
+                const map = await loadMappings();
+                studentName = map[String(code)];
+                if (studentName) {
+                    student = session.students.find(s =>
+                        s.name.trim() === studentName.trim() ||
+                        s.name.includes(studentName) ||
+                        studentName.includes(s.name)
+                    );
+                }
+            }
 
             if (!studentName) {
                 addBcLogRow(`❓ باركود غير معروف: ${code}`, timeShort, 'notfound');
                 return;
             }
-            const session = sessions.find(s => s.id === currentSessionId);
-            if (!session) return;
-
-            const student = session.students.find(s =>
-                s.name.trim() === studentName.trim() ||
-                s.name.includes(studentName) ||
-                studentName.includes(s.name)
-            );
-
             if (!student) {
                 addBcLogRow(`⚠️ ${studentName} — غير موجود في هذه الحصة`, timeShort, 'notfound');
                 return;
             }
             if (student.status === 'present') {
-                addBcLogRow(`🔵 ${studentName} — مسجل مسبقاً`, timeShort, 'already');
+                addBcLogRow(`🔵 ${student.name} — مسجل مسبقاً`, timeShort, 'already');
                 return;
             }
 
@@ -2452,8 +2461,8 @@
             userCol('attendanceSessions').doc(String(session.id)).set(session);
             renderStudents();
             updateSummary();
-            addBcLogRow(`✅ ${studentName}`, timeShort, 'present');
-            showAlert(`✅ تم تسجيل حضور: ${studentName}`, 'success');
+            addBcLogRow(`✅ ${student.name}`, timeShort, 'present');
+            showAlert(`✅ تم تسجيل حضور: ${student.name}`, 'success');
         }
 
         function addBcLogRow(text, time, type) {
