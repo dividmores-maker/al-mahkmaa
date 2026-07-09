@@ -905,11 +905,18 @@
             document.getElementById('teacherStudentsModal').classList.add('active');
         }
 
+        // بيرجع كل الـ IDs بتاعة مدرسين الطالب (يدعم teacherIds الجديد + teacherId القديم للتوافق)
+        function getStudentTeacherIds(s) {
+            if (Array.isArray(s.teacherIds) && s.teacherIds.length) return s.teacherIds.map(String);
+            if (s.teacherId) return [String(s.teacherId)];
+            return [];
+        }
+
         function showTeacherGrades() {
             document.getElementById('teacherStudentsList').style.display = 'none';
             const listDiv = document.getElementById('teacherGradesList');
 
-            const myStudents = students.filter(s => String(s.teacherId) === String(currentTeacherIdForStudents));
+            const myStudents = students.filter(s => getStudentTeacherIds(s).includes(String(currentTeacherIdForStudents)));
             const grades = [...new Set(myStudents.map(s => s.class))].filter(Boolean);
 
             if (grades.length === 0) {
@@ -937,7 +944,7 @@
             wrap.style.display = 'block';
 
             const list = students.filter(s =>
-                String(s.teacherId) === String(currentTeacherIdForStudents) && s.class === grade
+                getStudentTeacherIds(s).includes(String(currentTeacherIdForStudents)) && s.class === grade
             );
 
             const inner = document.getElementById('teacherStudentsInner');

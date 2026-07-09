@@ -483,7 +483,10 @@
         <div class="content-card">
             <div class="content-header">
                 <h2><span>📖</span> الكتب المتاحة</h2>
-                <button class="btn btn-success" onclick="showReservationsModal()">📋 عرض الحجوزات</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="btn btn-success" onclick="showReservationsModal()">📋 عرض الحجوزات</button>
+                    <button class="btn btn-cyan" onclick="showDailyReportModal()">📅 التقرير اليومي</button>
+                </div>
             </div>
 
             <!-- Filters -->
@@ -522,7 +525,7 @@
                     <option value="english">لغة إنجليزية</option>
                     <option value="science">علوم</option>
                     <option value="social">دراسات اجتماعية</option>
-                    <option value="religion">تربية دينية</option>
+                    <option value="technology">تكنولوجيا</option>
                 </select>
             </div>
 
@@ -601,6 +604,20 @@
         </div>
     </div>
 
+    <!-- Daily Report Modal -->
+    <div class="modal" id="dailyReportModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>📅 التقرير اليومي</h2>
+                <button class="close-btn" onclick="closeModal('dailyReportModal')">&times;</button>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:20px;">
+                <button class="btn btn-cyan" onclick="window.print()">🖨️ طباعة</button>
+            </div>
+            <div id="dailyReportList"></div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
         import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -628,7 +645,7 @@
 
         const BOOK_SUBJECTS = {
             math:'رياضيات', arabic:'لغة عربية', english:'لغة إنجليزية',
-            science:'علوم', social:'دراسات اجتماعية', religion:'تربية دينية', technology:'تكنولوجيا'
+            science:'علوم', social:'دراسات اجتماعية', technology:'تكنولوجيا'
         };
         const BOOK_GRADES = [
             { grade:1,  gradeName:'الأول الابتدائي',  stage:'elementary',  price:60 },
@@ -768,6 +785,33 @@
             } catch(e) { console.warn('Migration error:', e); }
         }
 
+        // تحويل كتب "تربية دينية" القديمة (المخزنة بالفعل في Firebase) إلى مادة "تكنولوجيا"
+        function migrateReligionToTechnology() {
+            const religionBooks = books.filter(b => b.subject === 'religion');
+            if (!religionBooks.length) return false;
+
+            religionBooks.forEach(rb => {
+                const techBook = books.find(b => b.subject === 'technology' && b.grade === rb.grade);
+                if (!techBook) {
+                    // مفيش كتاب تكنولوجيا لنفس الصف: نحول كتاب الدين نفسه لتكنولوجيا
+                    rb.subject = 'technology';
+                    rb.name    = BOOK_SUBJECTS.technology;
+                    return;
+                }
+                // موجود كتاب تكنولوجيا بالفعل لنفس الصف: ندمج الكميات ونحذف كتاب الدين
+                techBook.available += (rb.available || 0);
+                techBook.reserved  += (rb.reserved  || 0);
+                reservations.forEach(res => {
+                    if (res.bookId === rb.id) {
+                        res.bookId   = techBook.id;
+                        res.bookName = techBook.name;
+                    }
+                });
+                books = books.filter(b => b.id !== rb.id);
+            });
+            return true;
+        }
+
         function startListener() {
             onSnapshot(doc(db, 'books', 'data'), (snap) => {
                 if (snap.exists()) {
@@ -778,6 +822,7 @@
                     reservations = [];
                     saveData();
                 }
+                if (migrateReligionToTechnology()) saveData();
                 setFbStatus('connected', '🔥 Firebase متصل — البيانات محدّثة لحظياً');
                 renderBooks();
             }, () => setFbStatus('error', '❌ خطأ في الاتصال — تأكد من Firebase Rules'));
@@ -1070,6 +1115,102 @@
             document.getElementById('reservationsModal').classList.add('active');
         }
 
+        function showDailyReportModal() {
+            const list = document.getElementById('dailyReportList');
+            list.innerHTML = '';
+
+            if (!reservations.length) {
+                list.innerHTML = '<div class="empty">لا توجد حجوزات بعد</div>';
+                document.getElementById('dailyReportModal').classList.add('active');
+                return;
+            }
+
+            // تجميع الحجوزات حسب اليوم (تاريخ بدون وقت)
+            const dayGroups = {};
+            reservations.forEach(res => {
+                const dayKey = new Date(res.date).toISOString().slice(0, 10); // YYYY-MM-DD
+                if (!dayGroups[dayKey]) dayGroups[dayKey] = [];
+                dayGroups[dayKey].push(res);
+            });
+
+            const sortedDays = Object.keys(dayGroups).sort((a, b) => b.localeCompare(a)); // الأحدث أولاً
+
+            let html = '<div class="grades-list">';
+            sortedDays.forEach(dayKey => {
+                const dr          = dayGroups[dayKey];
+                const dayLabel    = new Date(dayKey).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const studentCount = new Set(dr.map(r => r.studentName)).size;
+                const totalBooks   = dr.reduce((s, r) => s + r.quantity, 0);
+                const totalPaid    = dr.reduce((s, r) => s + (r.paidAmount || 0), 0);
+                const totalDue     = dr.reduce((s, r) => s + (r.totalPrice || 0), 0);
+                const totalRem     = dr.reduce((s, r) => s + (r.remainingAmount || 0), 0);
+                const did          = dayKey.replace(/-/g, '_');
+
+                html += `
+                    <div class="grade-card" onclick="toggleDayDetails('${dayKey}')">
+                        <div class="grade-card-header">
+                            <div>
+                                <div class="grade-card-title">🗓️ ${dayLabel}</div>
+                                <div class="grade-card-meta">
+                                    <span><strong>${dr.length}</strong> حجز</span>
+                                    <span><strong>${totalBooks}</strong> كتاب اتحجز</span>
+                                    <span><strong>${totalPaid.toLocaleString()}</strong> جنيه دفعو</span>
+                                    <span><strong>${totalRem.toLocaleString()}</strong> جنيه متبقي</span>
+                                </div>
+                            </div>
+                            <div class="grade-arrow" id="dayarrow_${did}">▼</div>
+                        </div>
+                        <div class="grade-details" id="daydetails_${did}">
+                            <div style="overflow-x:auto;">
+                            <table class="report-table">
+                                <thead>
+                                    <tr><th>#</th><th>الطالب</th><th>الهاتف</th><th>الصف</th><th>الكتاب</th><th>العدد</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>حالة الدفع</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${dr.map((res, i) => {
+                                        const badgeCls = res.paymentStatus === 'paid' ? 'badge-paid' : res.paymentStatus === 'partial' ? 'badge-partial' : 'badge-unpaid';
+                                        const badgeTxt = res.paymentStatus === 'paid' ? 'مدفوع' : res.paymentStatus === 'partial' ? 'جزئي' : 'لم يدفع';
+                                        const remColor = res.remainingAmount > 0 ? '#fca5a5' : '#6ee7b7';
+                                        return `<tr>
+                                            <td>${i+1}</td><td>${res.studentName}</td><td>${res.studentPhone}</td><td>${res.grade}</td><td>${res.bookName}</td>
+                                            <td>${res.quantity}</td><td>${res.totalPrice} ج</td>
+                                            <td>${res.paidAmount||0} ج</td>
+                                            <td><strong style="color:${remColor}">${res.remainingAmount||0} ج</strong></td>
+                                            <td><span class="${badgeCls}">${badgeTxt}</span></td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+
+            const grandBooks = reservations.reduce((s, r) => s + r.quantity, 0);
+            const grandPaid  = reservations.reduce((s, r) => s + (r.paidAmount||0), 0);
+            html += `
+                <div class="report-summary">
+                    <div class="summary-item"><div class="value">${sortedDays.length}</div><div class="label">عدد الأيام</div></div>
+                    <div class="summary-item"><div class="value">${reservations.length}</div><div class="label">إجمالي الحجوزات</div></div>
+                    <div class="summary-item"><div class="value">${grandBooks}</div><div class="label">إجمالي الكتب اتحجزت</div></div>
+                    <div class="summary-item"><div class="value">${grandPaid.toLocaleString()} ج</div><div class="label">إجمالي المدفوع</div></div>
+                </div>`;
+
+            list.innerHTML = html;
+            document.getElementById('dailyReportModal').classList.add('active');
+        }
+
+        function toggleDayDetails(dayKey) {
+            const did     = dayKey.replace(/-/g, '_');
+            const details = document.getElementById('daydetails_' + did);
+            const arrow   = document.getElementById('dayarrow_'   + did);
+            if (!details) return;
+            const isHidden = details.style.display === 'none' || details.style.display === '';
+            details.style.display = isHidden ? 'block' : 'none';
+            arrow.textContent     = isHidden ? '▲' : '▼';
+        }
+
         function toggleGradeDetails(grade) {
             const gid     = grade.replace(/\s/g, '_');
             const details = document.getElementById('details_' + gid);
@@ -1122,7 +1263,9 @@
         window.updateTotalPrice      = updateTotalPrice;
         window.makeReservation       = makeReservation;
         window.showReservationsModal = showReservationsModal;
+        window.showDailyReportModal  = showDailyReportModal;
         window.toggleGradeDetails    = toggleGradeDetails;
+        window.toggleDayDetails      = toggleDayDetails;
         window.cancelReservation     = cancelReservation;
         window.payRemaining          = payRemaining;
         window.closeModal            = closeModal;
