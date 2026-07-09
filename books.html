@@ -305,6 +305,22 @@
         .form-group select:focus { outline:none; border-color:var(--purple-glow); box-shadow:0 0 0 3px rgba(168,85,247,.15); }
         .form-group select option { background:#1a0030; }
 
+        .student-dropdown {
+            display:none; position:absolute; top:100%; right:0; left:0; z-index:50;
+            margin-top:6px; max-height:220px; overflow-y:auto;
+            background:#1a0030; border:1px solid var(--card-border); border-radius:12px;
+            box-shadow:0 10px 30px rgba(0,0,0,.5);
+        }
+        .student-dropdown.open { display:block; }
+        .student-dropdown-item {
+            padding:11px 16px; font-size:14px; cursor:pointer;
+            border-bottom:1px solid rgba(255,255,255,.05);
+        }
+        .student-dropdown-item:last-child { border-bottom:none; }
+        .student-dropdown-item:hover, .student-dropdown-item.active { background:rgba(124,58,237,.25); }
+        .student-dropdown-item .class-tag { color:var(--text-muted); font-size:12px; margin-right:6px; }
+        .student-dropdown-empty { padding:14px 16px; font-size:13px; color:var(--text-muted); text-align:center; }
+
         .total-display {
             background:rgba(168,85,247,.1); border:1px solid rgba(168,85,247,.25);
             padding:16px; border-radius:12px; text-align:center; margin-bottom:16px;
@@ -525,12 +541,17 @@
             </div>
             <form onsubmit="makeReservation(event)">
                 <input type="hidden" id="reserveBookId">
-                <div class="form-group">
+                <div class="form-group" style="position:relative;">
                     <label>اسم الطالب</label>
-                    <input type="text" id="studentName" placeholder="أدخل اسم الطالب" required>
+                    <input type="text" id="studentSearchInput" placeholder="اكتب اسم الطالب للبحث..."
+                           autocomplete="off" oninput="filterStudentOptions()" onfocus="filterStudentOptions()">
+                    <input type="hidden" id="studentName">
+                    <div id="studentDropdownList" class="student-dropdown"></div>
                 </div>
                 <div class="form-group">
-                    <label>رقم الهاتف</label>
+                    <label>رقم الهاتف
+                        <span id="studentPhoneHint" style="display:none;color:var(--green-accent);font-size:11.5px;font-weight:700;">✓ اتجاب أوتوماتيك من بيانات الطالب</span>
+                    </label>
                     <input type="tel" id="studentPhone" placeholder="01xxxxxxxxx" pattern="[0-9]{11}" required>
                 </div>
                 <div class="form-group">
@@ -643,6 +664,82 @@
 
         let books        = JSON.parse(JSON.stringify(booksDefault));
         let reservations = [];
+        let students     = []; // تُجلب من صفحة إدارة الطلاب (نفس مشروع Firebase)
+
+        function startStudentsListener() {
+            onSnapshot(doc(db, 'students', 'data'), (snap) => {
+                students = snap.exists() ? (snap.data().students || []) : [];
+                renderStudentNamesDatalist();
+            }, (err) => {
+                console.warn('تعذر تحميل بيانات الطلاب:', err.message);
+            });
+        }
+
+        function renderStudentNamesDatalist() {
+            // بنخزن قايمة الطلاب مرتبة، والفلترة بتحصل في filterStudentOptions()
+            students = students
+                .filter(s => s && s.name)
+                .slice()
+                .sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
+        }
+
+        function findStudentById(id) {
+            if (!id) return null;
+            return students.find(s => String(s.id) === String(id)) || null;
+        }
+
+        function filterStudentOptions() {
+            const searchInput = document.getElementById('studentSearchInput');
+            const dropdown     = document.getElementById('studentDropdownList');
+            const query         = (searchInput.value || '').trim().toLowerCase();
+
+            const matches = query
+                ? students.filter(s => String(s.name).toLowerCase().includes(query))
+                : students;
+
+            if (!matches.length) {
+                dropdown.innerHTML = '<div class="student-dropdown-empty">لا يوجد طالب بهذا الاسم</div>';
+            } else {
+                dropdown.innerHTML = matches.slice(0, 50).map(s => `
+                    <div class="student-dropdown-item" onclick="selectStudentOption('${String(s.id).replace(/'/g,"\\'")}')">
+                        ${String(s.name).replace(/</g,'&lt;')}${s.class ? `<span class="class-tag">${String(s.class).replace(/</g,'&lt;')}</span>` : ''}
+                    </div>`).join('');
+            }
+            dropdown.classList.add('open');
+        }
+
+        function selectStudentOption(id) {
+            const student = findStudentById(id);
+            if (!student) return;
+            document.getElementById('studentSearchInput').value = student.name;
+            document.getElementById('studentName').value         = student.id;
+            document.getElementById('studentDropdownList').classList.remove('open');
+            onStudentNameInput();
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('studentSearchInput');
+            const dropdown = document.getElementById('studentDropdownList');
+            if (!wrapper || !dropdown) return;
+            if (e.target !== wrapper && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        function onStudentNameInput() {
+            const phoneInput  = document.getElementById('studentPhone');
+            const hint        = document.getElementById('studentPhoneHint');
+            const match       = findStudentById(document.getElementById('studentName').value);
+            if (match && match.phone) {
+                phoneInput.value    = match.phone;
+                phoneInput.readOnly = true;
+                if (hint) hint.style.display = 'inline';
+            } else {
+                phoneInput.value    = '';
+                phoneInput.readOnly = false;
+                if (hint) hint.style.display = 'none';
+            }
+        }
 
         async function saveData() {
             setFbStatus('saving', '💾 جاري الحفظ...');
@@ -826,10 +923,16 @@
 
         function showReserveModal(bookId) {
             document.getElementById('reserveBookId').value  = bookId;
+            document.getElementById('studentSearchInput').value = '';
             document.getElementById('studentName').value   = '';
             document.getElementById('studentPhone').value  = '';
+            document.getElementById('studentDropdownList').classList.remove('open');
+            renderStudentNamesDatalist();
             document.getElementById('bookQuantity').value  = '1';
             document.getElementById('paidAmount').value    = '';
+            document.getElementById('studentPhone').readOnly = false;
+            const hint = document.getElementById('studentPhoneHint');
+            if (hint) hint.style.display = 'none';
             updateTotalPrice();
             document.getElementById('bookQuantity').addEventListener('input', updateTotalPrice);
             document.getElementById('reserveModal').classList.add('active');
@@ -844,8 +947,12 @@
 
         function makeReservation(e) {
             e.preventDefault();
-            const bookId      = parseInt(document.getElementById('reserveBookId').value);
-            const studentName = document.getElementById('studentName').value;
+            const bookId       = parseInt(document.getElementById('reserveBookId').value);
+            const studentSel   = document.getElementById('studentName');
+            const studentId    = studentSel.value;
+            const linkedStudent= findStudentById(studentId);
+            if (!linkedStudent) { showAlert('من فضلك اختر الطالب من القائمة!', 'danger'); return; }
+            const studentName = linkedStudent.name;
             const studentPhone= document.getElementById('studentPhone').value;
             const quantity    = parseInt(document.getElementById('bookQuantity').value);
             const paidAmount  = parseFloat(document.getElementById('paidAmount').value) || 0;
@@ -862,6 +969,7 @@
 
             reservations.push({
                 id: Date.now(), bookId, bookName: book.name, grade: book.gradeName,
+                studentId: linkedStudent.id,
                 studentName, studentPhone, quantity, price: book.price,
                 totalPrice, paidAmount, remainingAmount: remaining,
                 paymentStatus, date: new Date().toISOString(), status: 'confirmed'
@@ -1019,10 +1127,14 @@
         window.payRemaining          = payRemaining;
         window.closeModal            = closeModal;
         window.addElementaryBooks    = addElementaryBooks;
+        window.onStudentNameInput    = onStudentNameInput;
+        window.filterStudentOptions  = filterStudentOptions;
+        window.selectStudentOption   = selectStudentOption;
 
         // Init
         setFbStatus('connecting', '🔌 جاري الاتصال بـ Firebase...');
         migrateIfNeeded().then(() => startListener());
+        startStudentsListener();
     </script>
 </body>
 </html>
