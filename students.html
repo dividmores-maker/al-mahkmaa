@@ -587,10 +587,41 @@
             body.printing-single #cardsModal .student-card.print-only-card { display: flex !important; }
             .card-barcode-img { filter: none; }
             .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; overflow: visible !important; }
+
+            body.printing-barcode-label * { visibility: hidden; }
+            body.printing-barcode-label #barcodeLabelPrint,
+            body.printing-barcode-label #barcodeLabelPrint * {
+                visibility: visible;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            body.printing-barcode-label #barcodeLabelPrint {
+                position: absolute; left: 0; top: 0; width: 100%;
+                display: flex !important; justify-content: center; align-items: center;
+                background: white !important;
+            }
+            body.printing-barcode-label #barcodeLabelPrint .student-card {
+                box-shadow: none;
+            }
         }
+
+        /* ── Single Card/Barcode Print Container ── */
+        #barcodeLabelPrint { display: none; }
+
+        .barcode-btn {
+            background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+            color: white; border: none; padding: 6px 10px; border-radius: 8px;
+            cursor: pointer; font-size: 13px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            transition: all 0.2s;
+        }
+        .barcode-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14,165,233,0.5); }
     </style>
 </head>
 <body>
+
+    <!-- Single Barcode Print Container -->
+    <div id="barcodeLabelPrint"></div>
 
     <!-- Background -->
     <div class="bg-layer">
@@ -981,6 +1012,7 @@ const firebaseConfig = {
                     <td>${student.phone}</td>
                     <td class="action-btns">
                         <button class="photo-btn" onclick="triggerPhotoUpload('${student.id}')" title="رفع صورة">📸</button>
+                        <button class="barcode-btn" onclick="printStudentBarcodeLabel('${student.id}')" title="طباعة باركود الطالب">🏷️ باركود</button>
                         <button class="edit-btn" onclick="editStudent('${student.id}')">✏️ تعديل</button>
                         <button class="delete-btn" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
                     </td>
@@ -1238,7 +1270,52 @@ const firebaseConfig = {
         window.onafterprint = function() {
             document.body.classList.remove('printing-single');
             document.querySelectorAll('.student-card').forEach(c => c.classList.remove('print-only-card'));
+            document.body.classList.remove('printing-barcode-label');
+            document.getElementById('barcodeLabelPrint').innerHTML = '';
         };
+
+        // ── Print a single student's ID card (same look as the full cards print) ──
+        function printStudentBarcodeLabel(id) {
+            const st = students.find(s => s.id === id);
+            if (!st) return;
+            const passKey = st.portalPassword || String(st.id).slice(-4);
+            const container = document.getElementById('barcodeLabelPrint');
+            container.innerHTML = `
+                <div class="student-card" data-student-id="${st.id}">
+                    <div class="card-stripe">
+                        <span class="card-stripe-brand">سنتر المحكمة</span>
+                        <span class="card-stripe-logo">🎓</span>
+                    </div>
+                    <div class="card-body">
+                        ${st.photo ? `<img src="${st.photo}" class="card-photo" />` : `<div class="card-photo-placeholder">👤</div>`}
+                        <div class="card-info">
+                            <div class="card-label">الإسم</div>
+                            <div class="card-name">${st.name}</div>
+                            <div class="card-class">${st.class}</div>
+                            <div class="card-field">
+                                <span class="card-field-label">الباركود :</span>
+                                <span class="card-field-value">${st.id}</span>
+                            </div>
+                            <div class="card-field">
+                                <span class="card-field-label">كلمة السر :</span>
+                                <span class="card-field-value">${passKey}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-barcode-section">
+                        <svg id="bc-label-${st.id}" class="card-barcode-img"></svg>
+                        <div class="card-code">${st.id}</div>
+                    </div>
+                    <div class="card-footer">سنتر المحكمة &copy; 2026</div>
+                </div>`;
+            setTimeout(() => {
+                try {
+                    JsBarcode(`#bc-label-${st.id}`, String(st.id), { format:'CODE128', width:1.6, height:44, displayValue:false, margin:3, background:'transparent', lineColor:'#1e0035' });
+                } catch(e) { console.warn('Barcode error for', st.id, e); }
+                document.body.classList.add('printing-barcode-label');
+                setTimeout(() => window.print(), 50);
+            }, 30);
+        }
 
         // ── Photo Upload ──
         let _uploadingStudentId = null;
