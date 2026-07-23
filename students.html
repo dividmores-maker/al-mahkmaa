@@ -309,36 +309,20 @@
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-        #subjectsCheckboxes {
+        #subjectsCheckboxes, #teachersCheckboxes {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
             padding: 14px; border: 1px solid rgba(168,85,247,0.25); border-radius: 10px;
             background: rgba(255,255,255,0.03);
         }
-        #subjectsCheckboxes label {
+        #subjectsCheckboxes label, #teachersCheckboxes label {
             display: flex; align-items: center; gap: 8px; cursor: pointer;
             padding: 7px 10px; border-radius: 8px;
             border: 1px solid rgba(168,85,247,0.12);
             background: rgba(168,85,247,0.06); color: rgba(255,255,255,0.75);
             font-size: 13px; font-weight: 700; transition: all 0.2s; margin: 0;
         }
-        #subjectsCheckboxes label:hover { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.3); }
-        #subjectsCheckboxes input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--purple-glow); }
-
-        #teachersCheckboxes {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-            padding: 14px; border: 1px solid rgba(168,85,247,0.25); border-radius: 10px;
-            background: rgba(255,255,255,0.03);
-        }
-        #teachersCheckboxes label {
-            display: flex; align-items: center; gap: 8px; cursor: pointer;
-            padding: 7px 10px; border-radius: 8px;
-            border: 1px solid rgba(168,85,247,0.12);
-            background: rgba(168,85,247,0.06); color: rgba(255,255,255,0.75);
-            font-size: 13px; font-weight: 700; transition: all 0.2s; margin: 0;
-        }
-        #teachersCheckboxes label:hover { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.3); }
-        #teachersCheckboxes input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--purple-glow); }
-        #teachersCheckboxes .no-teachers-msg { color: rgba(255,255,255,0.5); font-size: 13px; padding: 4px; }
+        #subjectsCheckboxes label:hover, #teachersCheckboxes label:hover { background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.3); }
+        #subjectsCheckboxes input[type="checkbox"], #teachersCheckboxes input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--purple-glow); }
 
         .submit-btn {
             background: linear-gradient(135deg, var(--purple-bright), var(--purple-glow));
@@ -372,135 +356,136 @@
         /* ── Student Card (Barcode Card) ── */
         /* ══ STUDENT ID CARD ══ */
         .student-card {
-            width: 320px;
-            border-radius: 16px;
+            width: 8.5cm;
+            height: 5cm;
+            border-radius: 10px;
             overflow: hidden;
             background: #ffffff;
             box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(124,58,237,0.3);
+            border: 1.5px dashed #a855f7;
             page-break-inside: avoid;
             display: flex;
             flex-direction: column;
             font-family: 'Cairo', sans-serif;
             position: relative;
         }
-        .card-print-single-btn {
-            position: absolute; top: 8px; left: 8px; z-index: 5;
-            background: rgba(255,255,255,0.9); border: 1px solid rgba(124,58,237,0.4);
-            color: #5b21b6; width: 30px; height: 30px; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 15px; cursor: pointer; transition: .2s;
-        }
-        .card-print-single-btn:hover { background: #7c3aed; color: #fff; transform: scale(1.08); }
         /* Purple diagonal top stripe */
         .card-stripe {
             background: linear-gradient(135deg, #5b21b6, #7c3aed, #a855f7);
-            padding: 14px 16px 12px;
+            padding: 8px 14px 7px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: relative;
             overflow: hidden;
+            flex-shrink: 0;
         }
         .card-stripe::after {
             content: '';
             position: absolute;
-            bottom: -18px; left: -10px;
-            width: 120%; height: 36px;
+            bottom: -12px; left: -10px;
+            width: 120%; height: 24px;
             background: #ffffff;
             transform: rotate(-2deg);
         }
         .card-stripe-brand {
-            font-size: 17px; font-weight: 900;
+            font-size: 13px; font-weight: 900;
             color: #ffffff;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             text-transform: uppercase;
             z-index: 1;
         }
         .card-stripe-logo {
-            font-size: 26px; z-index: 1;
+            font-size: 19px; z-index: 1;
         }
         /* White body */
         .card-body {
             background: #ffffff;
-            padding: 18px 16px 10px;
+            padding: 8px 14px 4px;
             display: flex;
-            gap: 14px;
+            gap: 10px;
             align-items: flex-start;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
         .card-photo {
-            width: 68px; height: 80px;
-            border-radius: 10px;
+            width: 50px; height: 60px;
+            border-radius: 8px;
             object-fit: cover;
-            border: 2.5px solid #7c3aed;
+            border: 2px solid #7c3aed;
             flex-shrink: 0;
             box-shadow: 0 4px 12px rgba(124,58,237,0.35);
         }
         .card-photo-placeholder {
-            width: 68px; height: 80px;
-            border-radius: 10px;
+            width: 50px; height: 60px;
+            border-radius: 8px;
             background: linear-gradient(135deg, #ede9fe, #ddd6fe);
             display: flex; align-items: center; justify-content: center;
-            font-size: 32px; flex-shrink: 0;
-            border: 2.5px solid #7c3aed;
+            font-size: 24px; flex-shrink: 0;
+            border: 2px solid #7c3aed;
         }
         .card-info { flex: 1; min-width: 0; direction: rtl; }
         .card-label {
-            font-size: 9px; font-weight: 700;
+            font-size: 7.5px; font-weight: 700;
             color: #7c3aed;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 1px;
         }
         .card-name {
-            font-size: 13px; font-weight: 900;
+            font-size: 11px; font-weight: 900;
             color: #1e0035;
-            margin-bottom: 8px;
-            line-height: 1.3;
+            margin-bottom: 4px;
+            line-height: 1.2;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .card-class {
-            font-size: 10px; color: #6b7280;
-            margin-bottom: 8px;
+            font-size: 8.5px; color: #6b7280;
+            margin-bottom: 4px;
             font-weight: 600;
         }
         .card-field {
             display: flex; align-items: center;
-            gap: 5px; margin-bottom: 4px;
+            gap: 4px; margin-bottom: 2px;
         }
         .card-field-label {
-            font-size: 9px; color: #9ca3af;
-            font-weight: 700; min-width: 52px;
+            font-size: 7.5px; color: #9ca3af;
+            font-weight: 700; min-width: 42px;
             text-align: right;
         }
         .card-field-value {
-            font-size: 10px; color: #1e0035;
+            font-size: 8.5px; color: #1e0035;
             font-weight: 800; font-family: monospace;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
         /* Barcode section */
         .card-barcode-section {
             background: #f9f6ff;
             border-top: 1px solid #ede9fe;
-            padding: 8px 14px 4px;
+            padding: 3px 12px 2px;
             text-align: center;
+            flex-shrink: 0;
         }
         .card-barcode-img {
-            width: 100%; max-height: 50px;
+            width: 100%; max-height: 32px;
         }
         .card-code {
-            font-size: 9px; color: #6b7280;
+            font-size: 7px; color: #6b7280;
             font-family: monospace;
-            letter-spacing: 2px;
-            margin-top: 2px;
+            letter-spacing: 1.5px;
+            margin-top: 1px;
         }
         /* Footer strip */
         .card-footer {
             background: linear-gradient(135deg, #5b21b6, #7c3aed);
             text-align: center;
-            padding: 5px;
-            font-size: 8px;
+            padding: 3px;
+            font-size: 6.5px;
             color: rgba(255,255,255,0.75);
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
             font-weight: 700;
+            flex-shrink: 0;
         }
 
         /* ── Animation ── */
@@ -513,115 +498,27 @@
         ::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.7); }
 
         /* ── Print ── */
-        /* ══════════ Mobile Responsive ══════════ */
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            .navbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; border-radius: 14px; }
-            .logo { font-size: 17px; }
-            .back-btn { padding: 8px 16px; font-size: 13px; }
-            .firebase-bar { padding: 9px 13px; font-size: 11.5px; flex-wrap: wrap; }
-            .main-content { padding: 16px; border-radius: 14px; }
-            .page-header { margin-bottom: 18px; padding-bottom: 14px; }
-            .page-header h1 { font-size: 20px; }
-            .page-header > div { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
-            .btn-primary, .add-student-btn, .print-btn { padding: 10px 14px; font-size: 13px; flex: 1; min-width: 120px; text-align: center; }
-
-            .stats-cards { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
-            .stat-card { padding: 14px; border-radius: 12px; }
-            .stat-card .number { font-size: 24px; }
-            .stat-card .label { font-size: 11.5px; }
-
-            .search-filter { grid-template-columns: 1fr; gap: 10px; margin-bottom: 16px; }
-            .search-filter input, .search-filter select { padding: 11px 12px; font-size: 13.5px; }
-
-            .students-table { min-width: 720px; }
-            .students-table th, .students-table td { padding: 10px 12px; font-size: 12.5px; }
-
-            .modal-content { width: 94%; margin: 3% auto; padding: 20px 16px; border-radius: 16px; }
-            .modal-header h2 { font-size: 18px; }
-            .form-row { grid-template-columns: 1fr; gap: 0; }
-            #subjectsCheckboxes { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
-            #subjectsCheckboxes label { font-size: 12px; padding: 6px 8px; }
-            #teachersCheckboxes { grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
-            #teachersCheckboxes label { font-size: 12px; padding: 6px 8px; }
-            .submit-btn { padding: 13px; font-size: 14.5px; }
-
-            .cards-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
-            .cards-filter-select { width: 100%; }
-            .cards-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-
-            .action-btns { flex-wrap: wrap; }
-        }
-
-        @media (max-width: 420px) {
-            .stats-cards { grid-template-columns: 1fr 1fr; }
-            .page-header > div { flex-direction: column; }
-            .btn-primary, .add-student-btn, .print-btn { width: 100%; }
-            #subjectsCheckboxes { grid-template-columns: 1fr; }
-            #teachersCheckboxes { grid-template-columns: 1fr; }
-        }
-
         @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
             body * { visibility: hidden; }
             #cardsModal, #cardsModal * { visibility: visible; }
-            html, body { height: auto !important; overflow: visible !important; }
-            #cardsModal, #cardsModal * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-            #cardsModal {
-                position: absolute !important;
-                left: 0; top: 0; width: 100%; height: auto !important;
-                background: white !important; backdrop-filter: none !important;
-                display: block !important; overflow: visible !important;
-            }
+            #cardsModal { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            #cardsModal.modal { background: white; backdrop-filter: none; }
             .cards-toolbar, #cardsCloseBtn { display: none !important; }
-            #cardsModal .modal-content {
-                box-shadow: none; max-width: 100%; padding: 10px; background: white;
-                max-height: none !important; overflow: visible !important; margin: 0 !important;
-            }
-            .student-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
-            .card-print-single-btn { display: none !important; }
-            body.printing-single #cardsModal .student-card { display: none !important; }
-            body.printing-single #cardsModal .student-card.print-only-card { display: flex !important; }
+            #cardsModal .modal-content { box-shadow: none; max-width: 100%; margin: 0; padding: 10px; background: white; max-height: none; overflow: visible; }
+            .modal-header { display: none; }
+            .student-card { box-shadow: none; border: 1.5px dashed #a855f7 !important; }
+            .card-stripe { background: linear-gradient(135deg, #5b21b6, #7c3aed, #a855f7) !important; }
+            .card-stripe::after { background: #ffffff !important; }
+            .card-footer { background: linear-gradient(135deg, #5b21b6, #7c3aed) !important; }
+            .card-barcode-section { background: #f9f6ff !important; }
+            .card-photo-placeholder { background: linear-gradient(135deg, #ede9fe, #ddd6fe) !important; }
             .card-barcode-img { filter: none; }
-            .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; overflow: visible !important; }
-
-            body.printing-barcode-label * { visibility: hidden; }
-            body.printing-barcode-label #barcodeLabelPrint,
-            body.printing-barcode-label #barcodeLabelPrint * {
-                visibility: visible;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-            body.printing-barcode-label #barcodeLabelPrint {
-                position: absolute; left: 0; top: 0; width: 100%;
-                display: flex !important; justify-content: center; align-items: center;
-                background: white !important;
-            }
-            body.printing-barcode-label #barcodeLabelPrint .student-card {
-                box-shadow: none;
-            }
+            .cards-grid { grid-template-columns: repeat(auto-fill, 8.5cm); justify-content: center; gap: 0.5cm; }
         }
-
-        /* ── Single Card/Barcode Print Container ── */
-        #barcodeLabelPrint { display: none; }
-
-        .barcode-btn {
-            background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-            color: white; border: none; padding: 6px 10px; border-radius: 8px;
-            cursor: pointer; font-size: 13px; font-family: 'Cairo', sans-serif; font-weight: 700;
-            transition: all 0.2s;
-        }
-        .barcode-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14,165,233,0.5); }
     </style>
 </head>
 <body>
-
-    <!-- Single Barcode Print Container -->
-    <div id="barcodeLabelPrint"></div>
 
     <!-- Background -->
     <div class="bg-layer">
@@ -698,12 +595,11 @@
                     <option value="arabic">عربي</option>
                     <option value="english">إنجليزي</option>
                     <option value="studies">دراسات</option>
-                    <option value="technology">تكنولوجيا</option>
                 </select>
             </div>
 
             <!-- Table -->
-            <div id="studentsTableContainer" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+            <div id="studentsTableContainer">
                 <table class="students-table">
                     <thead>
                         <tr>
@@ -736,15 +632,9 @@
                 <h2 id="modalTitle">➕ إضافة طالب جديد</h2>
             </div>
             <form id="studentForm" onsubmit="saveStudent(event)">
-                <div class="form-group" style="position:relative;">
+                <div class="form-group">
                     <label>الاسم الكامل *</label>
-                    <input type="text" id="studentName" required placeholder="أدخل الاسم الكامل" autocomplete="off"
-                           oninput="renderNameSuggestions()" onfocus="renderNameSuggestions()"
-                           onblur="setTimeout(()=>{document.getElementById('nameSuggestions').style.display='none';}, 150)">
-                    <div id="nameSuggestions" style="display:none;position:absolute;top:100%;right:0;left:0;z-index:50;
-                         background:#1a0f2e;border:1px solid rgba(168,85,247,.35);border-radius:10px;margin-top:4px;
-                         max-height:220px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);"></div>
-                    <small id="nameDuplicateWarning" style="display:none;color:#f87171;font-size:12.5px;margin-top:6px;"></small>
+                    <input type="text" id="studentName" required placeholder="أدخل الاسم الكامل">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -779,7 +669,6 @@
                             <label><input type="checkbox" name="subjects" value="arabic"><span>📝 عربي</span></label>
                             <label><input type="checkbox" name="subjects" value="english"><span>🔤 إنجليزي</span></label>
                             <label><input type="checkbox" name="subjects" value="studies"><span>🌍 دراسات</span></label>
-                            <label><input type="checkbox" name="subjects" value="technology"><span>💻 تكنولوجيا</span></label>
                         </div>
                         <small id="subjectsError" style="color:#f87171;display:none;margin-top:5px;">يجب اختيار مادة واحدة على الأقل</small>
                     </div>
@@ -795,20 +684,13 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>المدرسين * (يمكن اختيار أكثر من مدرس)</label>
+                    <label>المدرس(ين) * (يمكن اختيار أكثر من مدرس)</label>
                     <div id="teachersCheckboxes"></div>
-                    <small id="teachersError" style="color:#f87171;display:none;margin-top:5px;">يجب اختيار مدرس واحد على الأقل</small>
+                    <small id="teacherError" style="color:#f87171;display:none;margin-top:5px;">يجب اختيار مدرس واحد على الأقل</small>
                 </div>
                 <div class="form-group">
                     <label>رقم الهاتف *</label>
                     <input type="tel" id="studentPhone" required placeholder="01xxxxxxxxx" pattern="[0-9]{11}">
-                </div>
-                <div class="form-group">
-                    <label>كلمة سر بوابة أولياء الأمور *</label>
-                    <div style="display:flex; gap:8px;">
-                        <input type="text" id="studentPortalPassword" required placeholder="مثال: 4821" maxlength="8" style="flex:1;">
-                        <button type="button" onclick="generatePortalPassword()" style="flex-shrink:0; padding:0 14px; border-radius:10px; border:1px solid rgba(168,85,247,.35); background:rgba(124,58,237,.15); color:#c084fc; font-family:'Cairo',sans-serif; font-weight:700; cursor:pointer;">🎲 توليد</button>
-                    </div>
                 </div>
                 <div class="form-group">
                     <label>عنوان السكن</label>
@@ -914,20 +796,22 @@ const firebaseConfig = {
         function populateTeacherSelect() {
             const box = document.getElementById('teachersCheckboxes');
             if (!box) return;
-            // احتفظ بالاختيارات الحالية قبل إعادة الرسم
-            const currentlyChecked = Array.from(document.querySelectorAll('input[name="teachers"]:checked')).map(cb => cb.value);
-            if (teachers.length === 0) {
-                box.innerHTML = '<div class="no-teachers-msg">لا يوجد مدرسين مضافين بعد</div>';
-                return;
-            }
-            box.innerHTML = teachers.map(t => `
-                <label><input type="checkbox" name="teachers" value="${t.id}"><span>${t.name}</span></label>
-            `).join('');
-            if (currentlyChecked.length) {
-                document.querySelectorAll('input[name="teachers"]').forEach(cb => {
-                    cb.checked = currentlyChecked.includes(cb.value);
-                });
-            }
+            const currentlyChecked = new Set(
+                Array.from(box.querySelectorAll('input[name="teacherIds"]:checked')).map(cb => cb.value)
+            );
+            box.innerHTML = teachers.map(t =>
+                `<label><input type="checkbox" name="teacherIds" value="${t.id}"><span>${t.name}</span></label>`
+            ).join('') || '<span style="color:rgba(255,255,255,0.4);">لا يوجد مدرسين مسجلين بعد</span>';
+            box.querySelectorAll('input[name="teacherIds"]').forEach(cb => {
+                if (currentlyChecked.has(cb.value)) cb.checked = true;
+            });
+        }
+
+        function getTeacherIds(student) {
+            // متوافق مع البيانات القديمة (teacherId مفرد) والجديدة (teacherIds مصفوفة)
+            if (Array.isArray(student.teacherIds) && student.teacherIds.length > 0) return student.teacherIds.map(String);
+            if (student.teacherId !== undefined && student.teacherId !== null && student.teacherId !== '') return [String(student.teacherId)];
+            return [];
         }
 
         function getTeacherName(teacherId) {
@@ -935,9 +819,10 @@ const firebaseConfig = {
             return t ? t.name : '-';
         }
 
-        function getTeachersDisplay(teacherIds) {
-            if (!teacherIds || !Array.isArray(teacherIds) || teacherIds.length === 0) return '-';
-            return teacherIds.map(id => getTeacherName(id)).join('، ');
+        function getTeacherNamesDisplay(student) {
+            const ids = getTeacherIds(student);
+            if (ids.length === 0) return '-';
+            return ids.map(id => getTeacherName(id)).join('، ');
         }
 
         // ── Save ──
@@ -1005,14 +890,13 @@ const firebaseConfig = {
                         <strong style="vertical-align:middle;margin-right:6px;color:rgba(255,255,255,0.85);">${student.name}</strong>
                     </td>
                     <td>${student.class}</td>
-                    <td>${getTeachersDisplay(student.teacherIds || (student.teacherId ? [student.teacherId] : []))}</td>
+                    <td>${getTeacherNamesDisplay(student)}</td>
                     <td>${getSubjectsDisplay(student.subjects)}</td>
                     <td>${new Date(student.birthdate).toLocaleDateString('ar-EG')}</td>
                     <td>${student.age}</td>
                     <td>${student.phone}</td>
                     <td class="action-btns">
                         <button class="photo-btn" onclick="triggerPhotoUpload('${student.id}')" title="رفع صورة">📸</button>
-                        <button class="barcode-btn" onclick="printStudentBarcodeLabel('${student.id}')" title="طباعة باركود الطالب">🏷️ باركود</button>
                         <button class="edit-btn" onclick="editStudent('${student.id}')">✏️ تعديل</button>
                         <button class="delete-btn" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
                     </td>
@@ -1035,19 +919,12 @@ const firebaseConfig = {
             document.getElementById('modalTitle').textContent = '➕ إضافة طالب جديد';
             document.getElementById('studentForm').reset();
             document.getElementById('studentAge').value = '';
-            document.getElementById('studentPortalPassword').value = String(Math.floor(1000 + Math.random() * 9000));
             document.querySelectorAll('input[name="subjects"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[name="teacherIds"]').forEach(cb => cb.checked = false);
             document.getElementById('subjectsError').style.display = 'none';
-            document.querySelectorAll('input[name="teachers"]').forEach(cb => cb.checked = false);
-            document.getElementById('teachersError').style.display = 'none';
-            document.getElementById('nameSuggestions').style.display = 'none';
-            document.getElementById('nameDuplicateWarning').style.display = 'none';
+            document.getElementById('teacherError').style.display = 'none';
             document.getElementById('studentModal').style.display = 'block';
             document.body.style.overflow = 'hidden';
-        }
-
-        function generatePortalPassword() {
-            document.getElementById('studentPortalPassword').value = String(Math.floor(1000 + Math.random() * 9000));
         }
 
         function editStudent(id) {
@@ -1058,21 +935,18 @@ const firebaseConfig = {
             document.getElementById('studentId').value        = student.id;
             document.getElementById('studentName').value      = student.name;
             document.getElementById('studentClass').value     = student.class;
+            const editIds = new Set(getTeacherIds(student));
+            document.querySelectorAll('input[name="teacherIds"]').forEach(cb => {
+                cb.checked = editIds.has(String(cb.value));
+            });
             document.getElementById('studentBirthdate').value = student.birthdate;
             document.getElementById('studentAge').value       = student.age;
             document.getElementById('studentPhone').value     = student.phone;
-            document.getElementById('studentPortalPassword').value = student.portalPassword || String(Math.floor(1000 + Math.random() * 9000));
             document.getElementById('studentAddress').value   = student.address || '';
             document.getElementById('studentNotes').value     = student.notes || '';
             document.querySelectorAll('input[name="subjects"]').forEach(cb => {
                 cb.checked = student.subjects && student.subjects.includes(cb.value);
             });
-            const studentTeacherIds = student.teacherIds || (student.teacherId ? [student.teacherId] : []);
-            document.querySelectorAll('input[name="teachers"]').forEach(cb => {
-                cb.checked = studentTeacherIds.includes(cb.value);
-            });
-            document.getElementById('nameSuggestions').style.display = 'none';
-            document.getElementById('nameDuplicateWarning').style.display = 'none';
             document.getElementById('studentModal').style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
@@ -1082,48 +956,10 @@ const firebaseConfig = {
             document.body.style.overflow = 'auto';
             document.getElementById('studentForm').reset();
             document.querySelectorAll('input[name="subjects"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[name="teacherIds"]').forEach(cb => cb.checked = false);
             document.getElementById('subjectsError').style.display = 'none';
-            document.querySelectorAll('input[name="teachers"]').forEach(cb => cb.checked = false);
-            document.getElementById('teachersError').style.display = 'none';
+            document.getElementById('teacherError').style.display = 'none';
             editingStudentId = null;
-        }
-
-        function renderNameSuggestions() {
-            const input = document.getElementById('studentName');
-            const box = document.getElementById('nameSuggestions');
-            const warn = document.getElementById('nameDuplicateWarning');
-            const typed = input.value.trim();
-
-            if (!typed) { box.style.display = 'none'; warn.style.display = 'none'; return; }
-
-            const matches = students.filter(s =>
-                s.id !== editingStudentId &&
-                (s.name || '').toLowerCase().includes(typed.toLowerCase())
-            ).slice(0, 8);
-
-            const exactDuplicate = students.find(s =>
-                s.id !== editingStudentId &&
-                (s.name || '').trim().toLowerCase() === typed.toLowerCase()
-            );
-
-            if (exactDuplicate) {
-                warn.textContent = `⚠️ يوجد طالب بنفس الاسم بالفعل (${exactDuplicate.class}) — تأكد إنه مش نفس الطالب قبل الإضافة`;
-                warn.style.display = 'block';
-            } else {
-                warn.style.display = 'none';
-            }
-
-            if (matches.length === 0) { box.style.display = 'none'; return; }
-
-            box.innerHTML = matches.map(s => `
-                <div onclick="document.getElementById('studentName').value='${s.name.replace(/'/g,"\\'")}'; renderNameSuggestions();"
-                     style="padding:10px 14px;cursor:pointer;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;gap:10px;color:#fff;"
-                     onmouseover="this.style.background='rgba(168,85,247,.15)'" onmouseout="this.style.background='transparent'">
-                    <span style="color:#fff;">${s.name}</span>
-                    <span style="color:rgba(255,255,255,.45);font-size:11.5px;">${s.class}</span>
-                </div>
-            `).join('');
-            box.style.display = 'block';
         }
 
         function saveStudent(event) {
@@ -1134,24 +970,12 @@ const firebaseConfig = {
                 return;
             }
             document.getElementById('subjectsError').style.display = 'none';
-
-            const selectedTeachers = Array.from(document.querySelectorAll('input[name="teachers"]:checked')).map(cb => cb.value);
-            if (selectedTeachers.length === 0) {
-                document.getElementById('teachersError').style.display = 'block';
+            const selectedTeacherIds = Array.from(document.querySelectorAll('input[name="teacherIds"]:checked')).map(cb => cb.value);
+            if (selectedTeacherIds.length === 0) {
+                document.getElementById('teacherError').style.display = 'block';
                 return;
             }
-            document.getElementById('teachersError').style.display = 'none';
-
-            const typedName = document.getElementById('studentName').value.trim();
-            const duplicate = students.find(s =>
-                s.id !== editingStudentId &&
-                (s.name || '').trim().toLowerCase() === typedName.toLowerCase()
-            );
-            if (duplicate) {
-                alert(`❌ الطالب "${typedName}" موجود بالفعل في الصف (${duplicate.class}).\n\nمينفعش تضيف طالب بنفس الاسم مرتين. لو ده طالب تاني فعلاً بنفس الاسم بالصدفة، ينفع تفرق بينهم بإضافة حرف من اسم العيلة أو رقم في الآخر.`);
-                return;
-            }
-
+            document.getElementById('teacherError').style.display = 'none';
             const student = {
                 id:          editingStudentId || Date.now().toString(),
                 name:        document.getElementById('studentName').value,
@@ -1159,10 +983,10 @@ const firebaseConfig = {
                 subjects:    selectedSubjects,
                 birthdate:   document.getElementById('studentBirthdate').value,
                 age:         document.getElementById('studentAge').value,
-                teacherIds:   selectedTeachers,
-                teacherNames: selectedTeachers.map(id => getTeacherName(id)),
+                teacherIds:  selectedTeacherIds,
+                teacherId:   selectedTeacherIds[0], // للتوافق مع أي كود قديم بيقرأ حقل واحد بس
+                teacherName: selectedTeacherIds.map(id => getTeacherName(id)).join('، '),
                 phone:       document.getElementById('studentPhone').value,
-                portalPassword: document.getElementById('studentPortalPassword').value.trim(),
                 address:     document.getElementById('studentAddress').value,
                 notes:       document.getElementById('studentNotes').value,
                 createdAt: editingStudentId ? students.find(s => s.id === editingStudentId)?.createdAt : new Date().toISOString()
@@ -1220,10 +1044,9 @@ const firebaseConfig = {
                 return;
             }
             grid.innerHTML = filtered.map(st => {
-                const passKey = st.portalPassword || String(st.id).slice(-4);
+                const passKey = String(st.id).slice(-4);
                 return `
-                <div class="student-card" data-student-id="${st.id}">
-                    <button class="card-print-single-btn" onclick="printSingleCard('${st.id}')" title="طباعة هذا الكارت فقط">🖨️</button>
+                <div class="student-card">
                     <div class="card-stripe">
                         <span class="card-stripe-brand">سنتر المحكمة</span>
                         <span class="card-stripe-logo">🎓</span>
@@ -1258,63 +1081,6 @@ const firebaseConfig = {
                     } catch(e) { console.warn('Barcode error for', st.id, e); }
                 });
             }, 50);
-        }
-
-        function printSingleCard(id) {
-            document.querySelectorAll('.student-card').forEach(c => c.classList.remove('print-only-card'));
-            const card = document.querySelector(`.student-card[data-student-id="${id}"]`);
-            if (card) card.classList.add('print-only-card');
-            document.body.classList.add('printing-single');
-            window.print();
-        }
-        window.onafterprint = function() {
-            document.body.classList.remove('printing-single');
-            document.querySelectorAll('.student-card').forEach(c => c.classList.remove('print-only-card'));
-            document.body.classList.remove('printing-barcode-label');
-            document.getElementById('barcodeLabelPrint').innerHTML = '';
-        };
-
-        // ── Print a single student's ID card (same look as the full cards print) ──
-        function printStudentBarcodeLabel(id) {
-            const st = students.find(s => s.id === id);
-            if (!st) return;
-            const passKey = st.portalPassword || String(st.id).slice(-4);
-            const container = document.getElementById('barcodeLabelPrint');
-            container.innerHTML = `
-                <div class="student-card" data-student-id="${st.id}">
-                    <div class="card-stripe">
-                        <span class="card-stripe-brand">سنتر المحكمة</span>
-                        <span class="card-stripe-logo">🎓</span>
-                    </div>
-                    <div class="card-body">
-                        ${st.photo ? `<img src="${st.photo}" class="card-photo" />` : `<div class="card-photo-placeholder">👤</div>`}
-                        <div class="card-info">
-                            <div class="card-label">الإسم</div>
-                            <div class="card-name">${st.name}</div>
-                            <div class="card-class">${st.class}</div>
-                            <div class="card-field">
-                                <span class="card-field-label">الباركود :</span>
-                                <span class="card-field-value">${st.id}</span>
-                            </div>
-                            <div class="card-field">
-                                <span class="card-field-label">كلمة السر :</span>
-                                <span class="card-field-value">${passKey}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-barcode-section">
-                        <svg id="bc-label-${st.id}" class="card-barcode-img"></svg>
-                        <div class="card-code">${st.id}</div>
-                    </div>
-                    <div class="card-footer">سنتر المحكمة &copy; 2026</div>
-                </div>`;
-            setTimeout(() => {
-                try {
-                    JsBarcode(`#bc-label-${st.id}`, String(st.id), { format:'CODE128', width:1.6, height:44, displayValue:false, margin:3, background:'transparent', lineColor:'#1e0035' });
-                } catch(e) { console.warn('Barcode error for', st.id, e); }
-                document.body.classList.add('printing-barcode-label');
-                setTimeout(() => window.print(), 50);
-            }, 30);
         }
 
         // ── Photo Upload ──
