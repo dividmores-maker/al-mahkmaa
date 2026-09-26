@@ -1237,6 +1237,7 @@
             }
             db.collection('students').doc('data').onSnapshot(snap => {
                 registeredStudents = snap.exists ? (snap.data().students || []) : [];
+                syncStudentIdsWithRegistry();
             }, err => {
                 console.warn('⚠️ لا يمكن متابعة تحديثات قائمة الطلاب (صلاحيات Firestore):', err.message);
             });
@@ -1262,6 +1263,7 @@
             });
             renderSessions();
             updateMappingCount();
+            await syncStudentIdsWithRegistry();
 
             // Listen for real-time schedule changes
             db.collection('schedule').doc('data').onSnapshot(snap => {
@@ -1270,6 +1272,7 @@
                     buildSessionsFromSchedule(snap.data());
                     if (!currentSessionId) renderSessions();
                     setFirebaseStatus('connected', `🔥 Firebase متصل — ${sessions.length} حصة محملة`);
+                    syncStudentIdsWithRegistry();
                 } else {
                     console.warn('⚠️ لا يوجد بيانات جدول في Firebase — أضف حصص من صفحة الجدول');
                     setFirebaseStatus('warning', '⚠️ لا توجد حصص في Firebase — اذهب لصفحة جدول الحصص');
@@ -1321,6 +1324,59 @@
                 sessions = [];
                 setFirebaseStatus('error', '❌ خطأ: ' + e.message + ' — تأكد من Firebase Rules');
             }
+        }
+
+        // ══════════════════════════════════════════════════
+        //  مزامنة IDs الطلاب مع مجموعة الطلاب الرسمية (students)
+        //  بتصلح تلقائيًا أي id قديم/غير متطابق في قوائم طلاب
+        //  الحصص عن طريق المطابقة بالاسم، عشان بوابة أولياء
+        //  الأمور تلاقي سجل الحضور دايمًا بنفس كود الكارت الحالي.
+        // ══════════════════════════════════════════════════
+        async function syncStudentIdsWithRegistry() {
+            if (!registeredStudents.length || !sessions.length) return;
+
+            // خريطة اسم → طالب مسجل، بس لو الاسم فريد (مش متكرر بين طالبين)
+            const nameCount = {};
+            registeredStudents.forEach(st => {
+                const key = (st.name || '').trim();
+                if (key) nameCount[key] = (nameCount[key] || 0) + 1;
+            });
+            const nameToStudent = {};
+            registeredStudents.forEach(st => {
+                const key = (st.name || '').trim();
+                if (key && nameCount[key] === 1) nameToStudent[key] = st;
+            });
+
+            const changedSessions = [];
+            sessions.forEach(session => {
+                let changed = false;
+                (session.students || []).forEach(st => {
+                    const key = (st.name || '').trim();
+                    const registered = nameToStudent[key];
+                    if (registered && String(registered.id) !== String(st.id)) {
+                        console.warn(`🔄 مزامنة id للطالب "${st.name}": ${st.id} → ${registered.id}`);
+                        st.id = registered.id;
+                        changed = true;
+                    }
+                });
+                if (changed) changedSessions.push(session);
+            });
+
+            if (!changedSessions.length) return;
+
+            for (const session of changedSessions) {
+                try {
+                    if (!window._fbAttMap) window._fbAttMap = {};
+                    window._fbAttMap[session.id] = session;
+                    await userCol('attendanceSessions').doc(String(session.id)).set(session);
+                } catch(e) {
+                    console.error('❌ فشل حفظ مزامنة id لحصة', session.id, e);
+                }
+            }
+
+            console.log(`✅ تمت مزامنة id لـ ${changedSessions.length} حصة تلقائيًا`);
+            renderSessions();
+            if (currentSessionId) { renderStudents(); updateSummary(); }
         }
 
         function showAlert(message, type = 'success') {
