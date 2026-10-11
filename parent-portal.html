@@ -836,6 +836,20 @@ async function loadAttendance(s){
       if (stEntry) mine.push({ ...r, myStatus: stEntry.status });
     });
 
+    // الحصص الجارية: الحضور بيتسجل الأول في attendanceSessions ومبيروحش للسجل غير لما المدرس يدوس "حفظ" أو "انتهاء الحصة"
+    try {
+      const liveSnap = await getDocs(collection(db, 'attendance_data', 'default_user', 'attendanceSessions'));
+      const today = new Date().toISOString().split('T')[0];
+      liveSnap.forEach(d => {
+        const r = d.data();
+        if (r.completed) return; // اتحفظت في السجل بالفعل
+        const stEntry = (r.students || []).find(st => String(st.id) === String(s.id));
+        if (stEntry && (stEntry.status === 'present' || stEntry.status === 'absent')) {
+          mine.push({ ...r, saveDate: today, myStatus: stEntry.status, live: true });
+        }
+      });
+    } catch(e) { console.warn('live attendance read failed', e); }
+
     mine.sort((a,b) => (b.saveDate || '').localeCompare(a.saveDate || ''));
 
     const present = mine.filter(r => r.myStatus === 'present').length;
@@ -846,7 +860,7 @@ async function loadAttendance(s){
     let rows = mine.map(r => `
       <tr>
         <td>${fDate(r.saveDate)}</td>
-        <td>${r.subject || '—'}</td>
+        <td>${r.subject || '—'}${r.live ? ' <span class="badge amber">حصة جارية</span>' : ''}</td>
         <td>${r.teacher || '—'}</td>
         <td>${
           r.myStatus === 'present' ? '<span class="badge green">حاضر ✔</span>' :
