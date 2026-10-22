@@ -2015,6 +2015,10 @@
         }
 
         function buildWhatsappMessage(student, session) {
+            return buildWhatsappBaseMessage(student, session) + '\n\n📞 للشكاوى والاستفسارات الاتصال على: 01555553400';
+        }
+
+        function buildWhatsappBaseMessage(student, session) {
             const sessionName = `${session.subject} - ${session.class}`;
             const today = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
