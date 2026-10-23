@@ -247,6 +247,14 @@
         }
         .photo-btn:hover { transform: scale(1.05); }
 
+        .print-btn {
+            padding: 6px 12px; border: none; border-radius: 7px;
+            cursor: pointer; font-size: 13px; font-family: 'Cairo', sans-serif; font-weight: 700;
+            background: linear-gradient(135deg, #059669, #10b981); color: white;
+            transition: transform 0.2s; box-shadow: 0 2px 8px rgba(16,185,129,0.35);
+        }
+        .print-btn:hover { transform: scale(1.05); }
+
         /* ── Thumbnail ── */
         .student-thumb { width:36px; height:36px; border-radius:50%; object-fit:cover; border:2px solid rgba(168,85,247,0.5); vertical-align:middle; }
         .student-thumb-placeholder {
@@ -897,6 +905,7 @@ const firebaseConfig = {
                     <td>${student.phone}</td>
                     <td class="action-btns">
                         <button class="photo-btn" onclick="triggerPhotoUpload('${student.id}')" title="رفع صورة">📸</button>
+                        <button class="print-btn" onclick="printStudentCard('${student.id}')" title="طباعة الكارت">🖨️ كارت</button>
                         <button class="edit-btn" onclick="editStudent('${student.id}')">✏️ تعديل</button>
                         <button class="delete-btn" onclick="deleteStudent('${student.id}')">🗑️ حذف</button>
                     </td>
@@ -1034,16 +1043,7 @@ const firebaseConfig = {
             document.body.style.overflow = 'auto';
         }
 
-        function renderCards() {
-            const classFilter = document.getElementById('cardsClassFilter').value;
-            const grid = document.getElementById('cardsGrid');
-            const filtered = classFilter ? students.filter(s => s.class === classFilter) : students;
-            document.getElementById('cardsCount').textContent = `${filtered.length} طالب`;
-            if (filtered.length === 0) {
-                grid.innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4);padding:40px;grid-column:1/-1;">لا يوجد طلاب</p>';
-                return;
-            }
-            grid.innerHTML = filtered.map(st => {
+        function cardHTML(st) {
                 const passKey = String(st.id).slice(-4);
                 return `
                 <div class="student-card">
@@ -1073,7 +1073,18 @@ const firebaseConfig = {
                     </div>
                     <div class="card-footer">سنتر المحكمة &copy; 2026</div>
                 </div>`;
-            }).join('');
+        }
+
+        function renderCards() {
+            const classFilter = document.getElementById('cardsClassFilter').value;
+            const grid = document.getElementById('cardsGrid');
+            const filtered = classFilter ? students.filter(s => s.class === classFilter) : students;
+            document.getElementById('cardsCount').textContent = `${filtered.length} طالب`;
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="text-align:center;color:rgba(255,255,255,0.4);padding:40px;grid-column:1/-1;">لا يوجد طلاب</p>';
+                return;
+            }
+            grid.innerHTML = filtered.map(st => cardHTML(st)).join('');
             setTimeout(() => {
                 filtered.forEach(st => {
                     try {
@@ -1081,6 +1092,59 @@ const firebaseConfig = {
                     } catch(e) { console.warn('Barcode error for', st.id, e); }
                 });
             }, 50);
+        }
+
+
+        // ── Print single card ──
+        function printStudentCard(id) {
+            const st = students.find(s => String(s.id) === String(id));
+            if (!st) return;
+
+            // باركود في SVG منفصل
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const holder = document.createElement('div');
+            holder.innerHTML = cardHTML(st);
+            const svg = holder.querySelector('svg.card-barcode-img');
+            try {
+                JsBarcode(svg, String(st.id), { format:'CODE128', width:1.6, height:44, displayValue:false, margin:3, background:'transparent', lineColor:'#1e0035' });
+            } catch(e) { console.warn('Barcode error for', st.id, e); }
+
+            // ناخد ستايل الكارت بس من الصفحة
+            let cardCss = '';
+            for (const sheet of document.styleSheets) {
+                let rules; try { rules = sheet.cssRules; } catch(e) { continue; }
+                for (const r of rules) {
+                    if (r.type === 1 && /^\.(student-card|card-)/.test(r.selectorText)) cardCss += r.cssText + '\n';
+                }
+            }
+
+            const old = document.getElementById('singlePrintFrame');
+            if (old) old.remove();
+            const iframe = document.createElement('iframe');
+            iframe.id = 'singlePrintFrame';
+            iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+            document.body.appendChild(iframe);
+
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+                <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+                <style>
+                    * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+                    @page { size: 8.5cm 5cm; margin: 0; }
+                    html, body { width:8.5cm; height:5cm; background:#fff; font-family:'Cairo',sans-serif; }
+                    ${cardCss}
+                    .student-card { box-shadow:none; border-radius:0; }
+                </style></head><body>${holder.innerHTML}</body></html>`);
+            doc.close();
+
+            const doPrint = () => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                setTimeout(() => iframe.remove(), 1500);
+            };
+            const ready = iframe.contentWindow.document.fonts ? iframe.contentWindow.document.fonts.ready : Promise.resolve();
+            Promise.race([ready, new Promise(r => setTimeout(r, 1500))]).then(() => setTimeout(doPrint, 200));
         }
 
         // ── Photo Upload ──
