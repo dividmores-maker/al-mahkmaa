@@ -544,7 +544,7 @@
         const roomNames    = { a1:'A1',a2:'A2',b1:'B1',b2:'B2',c1:'C1',c2:'C2',d1:'D1',d2:'D2',e1:'E1' };
 
         import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
         const firebaseConfig = {
     apiKey: "AIzaSyDHM7XE_oYiLpTx_JKgNIgTXTPGX1HHjyU",
@@ -590,35 +590,14 @@
             }
         }
 
-        // ── حفظ آمن: بيقرا آخر نسخة من السيرفر ويطبّق التعديل عليها (مش بيكتب فوق الداتا كلها) ──
-        // لو مفيش نت العملية بتفشل ومبتمسحش حاجة
-        async function updateSchedule(mutator) {
-            if (!navigator.onLine) {
-                showAlert('❌ مفيش اتصال بالإنترنت — محصلش حفظ. حاول تاني لما النت يرجع', 'danger');
-                return false;
-            }
+        async function saveScheduleData() {
             setFbStatus('saving', '💾 جاري الحفظ على Firebase...');
             try {
-                const ref = doc(db, 'schedule', 'data');
-                await runTransaction(db, async (tx) => {
-                    const snap = await tx.get(ref);
-                    const d = snap.exists() ? snap.data() : {};
-                    const state = {
-                        sessions:      d.sessions      || [],
-                        classes:       d.classes       || defaultClasses(),
-                        nextSessionId: d.nextSessionId || 1,
-                        nextClassId:   d.nextClassId   || 10
-                    };
-                    mutator(state);
-                    tx.set(ref, state);
-                });
+                await setDoc(doc(db, 'schedule', 'data'), { sessions, classes, nextSessionId, nextClassId });
                 setFbStatus('connected', '🔥 Firebase — تم الحفظ ✔');
-                return true;
             } catch(e) {
                 console.error('Save error:', e);
                 setFbStatus('error', '❌ خطأ في الحفظ — ' + e.message);
-                showAlert('❌ فشل الحفظ — تأكد من الإنترنت وحاول تاني', 'danger');
-                return false;
             }
         }
 
@@ -631,19 +610,13 @@
                         classes       = data.classes       || defaultClasses();
                         nextSessionId = data.nextSessionId || 1;
                         nextClassId   = data.nextClassId   || 10;
-                    } else if (snap.metadata.fromCache) {
-                        // لقطة من الكاش بدون داتا (غالباً النت قاطع) — نتجاهلها ومنحفظش حاجة
-                        setFbStatus('connecting', '🔌 مستني اتصال Firebase...');
-                        return;
                     } else {
                         sessions = []; classes = defaultClasses();
                         nextSessionId = 1; nextClassId = 10;
-                        updateSchedule(() => {});
+                        saveScheduleData();
                     }
                     setFbStatus('connected', '🔥 Firebase متصل — البيانات محدّثة لحظياً');
                     renderSchedule();
-                    const cs = document.getElementById('classesSection');
-                    if (cs && cs.style.display === 'block') renderClasses();
                 },
                 (err) => {
                     console.error('Listener error:', err);
@@ -754,7 +727,7 @@
             document.getElementById('addSessionModal').classList.add('active');
         }
 
-        async function saveSession(e) {
+        function saveSession(e) {
             e.preventDefault();
             const startTime = document.getElementById('sessionStartTime').value;
             const endTime   = document.getElementById('sessionEndTime').value;
@@ -772,7 +745,7 @@
             const sessionId = document.getElementById('sessionId').value;
             const day = parseInt(document.getElementById('sessionDay').value);
             const sessionData = {
-                id:        sessionId ? parseInt(sessionId) : null,
+                id:        sessionId ? parseInt(sessionId) : nextSessionId++,
                 subject:   document.getElementById('sessionSubject').value,
                 class:     document.getElementById('sessionClass').value,
                 teacher:   document.getElementById('sessionTeacher').value,
@@ -784,18 +757,18 @@
                 date:      getDateForDay(day)
             };
 
-            const ok = await updateSchedule(st => {
-                if (sessionId) {
-                    const index = st.sessions.findIndex(x => x.id === parseInt(sessionId));
-                    if (index >= 0) st.sessions[index] = sessionData; else st.sessions.push(sessionData);
-                } else {
-                    sessionData.id = st.nextSessionId++;
-                    st.sessions.push(sessionData);
-                }
-            });
-            if (!ok) return;
-            showAlert(sessionId ? 'تم تعديل الحصة بنجاح! ✔' : 'تم إضافة الحصة بنجاح! ✔');
+            if (sessionId) {
+                const index = sessions.findIndex(s => s.id === parseInt(sessionId));
+                sessions[index] = sessionData;
+                saveScheduleData();
+                showAlert('تم تعديل الحصة بنجاح! ✔');
+            } else {
+                sessions.push(sessionData);
+                saveScheduleData();
+                showAlert('تم إضافة الحصة بنجاح! ✔');
+            }
             closeModal('addSessionModal');
+            renderSchedule();
         }
 
         function showSessionDetails(session) {
@@ -822,12 +795,14 @@
             document.getElementById('sessionDetailsModal').classList.add('active');
         }
 
-        async function deleteSession(sessionId) {
-            if (!confirm('هل أنت متأكد من حذف هذه الحصة؟')) return;
-            const ok = await updateSchedule(st => { st.sessions = st.sessions.filter(x => x.id !== sessionId); });
-            if (!ok) return;
-            showAlert('تم حذف الحصة بنجاح!', 'success');
-            closeModal('sessionDetailsModal');
+        function deleteSession(sessionId) {
+            if (confirm('هل أنت متأكد من حذف هذه الحصة؟')) {
+                sessions = sessions.filter(s => s.id !== sessionId);
+                saveScheduleData();
+                showAlert('تم حذف الحصة بنجاح!', 'success');
+                closeModal('sessionDetailsModal');
+                renderSchedule();
+            }
         }
 
         function toggleClassesSection() {
@@ -898,38 +873,38 @@
             document.getElementById('addClassModal').classList.add('active');
         }
 
-        async function saveClass(e) {
+        function saveClass(e) {
             e.preventDefault();
             const classId = document.getElementById('classId').value;
             const classData = {
-                id:       classId ? parseInt(classId) : null,
+                id:       classId ? parseInt(classId) : nextClassId++,
                 name:     document.getElementById('className').value,
                 room:     document.getElementById('classRoom').value,
                 capacity: parseInt(document.getElementById('classCapacity').value),
                 enrolled: parseInt(document.getElementById('classEnrolled').value),
                 level:    parseInt(document.getElementById('classLevel').value)
             };
-            const ok = await updateSchedule(st => {
-                if (classId) {
-                    const index = st.classes.findIndex(c => c.id === parseInt(classId));
-                    if (index >= 0) st.classes[index] = classData; else st.classes.push(classData);
-                } else {
-                    classData.id = st.nextClassId++;
-                    st.classes.push(classData);
-                }
-            });
-            if (!ok) return;
-            showAlert(classId ? 'تم تعديل الفصل بنجاح! ✔' : 'تم إضافة الفصل بنجاح! ✔');
+            if (classId) {
+                const index = classes.findIndex(c => c.id === parseInt(classId));
+                classes[index] = classData;
+                saveScheduleData();
+                showAlert('تم تعديل الفصل بنجاح! ✔');
+            } else {
+                classes.push(classData);
+                saveScheduleData();
+                showAlert('تم إضافة الفصل بنجاح! ✔');
+            }
             closeModal('addClassModal');
             renderClasses();
         }
 
-        async function deleteClass(classId) {
-            if (!confirm('هل أنت متأكد من حذف هذا الفصل؟')) return;
-            const ok = await updateSchedule(st => { st.classes = st.classes.filter(c => c.id !== classId); });
-            if (!ok) return;
-            showAlert('تم حذف الفصل بنجاح!', 'success');
-            renderClasses();
+        function deleteClass(classId) {
+            if (confirm('هل أنت متأكد من حذف هذا الفصل؟')) {
+                classes = classes.filter(c => c.id !== classId);
+                saveScheduleData();
+                showAlert('تم حذف الفصل بنجاح!', 'success');
+                renderClasses();
+            }
         }
 
         function closeModal(modalId) {

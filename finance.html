@@ -253,6 +253,7 @@
             <button class="btn btn-history" onclick="showHistoryModal()">📅 سجل الشهور</button>
             <button class="btn" style="background:linear-gradient(135deg,#0891b2,#06b6d4);box-shadow:0 4px 15px rgba(6,182,212,.3);" onclick="showDailyReportModal()">🧾 التقرير اليومي</button>
             <button class="btn" onclick="showSetPricesModal()">💰 أسعار الاشتراكات</button>
+            <button class="btn btn-whatsapp" onclick="sendOverdueWhatsApp()">📤 تذكير المتأخرين</button>
             <a href="home.html" class="btn btn-warning">🏠 الرئيسية</a>
         </div>
     </div>
@@ -952,17 +953,77 @@
         const s = students.find(x => x.id === studentId);
         if (!s) return;
         const msg = buildMessage(s);
+        _msgStudentName = s.name;
         document.getElementById('messagePreview').textContent = msg;
         document.getElementById('messageText').value = msg;
         document.getElementById('parentPhone').value = s.phone || '';
         document.getElementById('messageModal').classList.add('active');
     }
 
-    function sendWhatsApp() {
+
+    // ══ إرسال واتساب تلقائي عن طريق السيرفر المحلي (wa-sender) ══
+    const WA_SERVER = 'http://localhost:3001';
+    let _waPoll = null;
+    function waBar(txt) {
+        let b = document.getElementById('waBar');
+        if (!b) {
+            b = document.createElement('div'); b.id = 'waBar';
+            b.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:99999;background:#0f172a;color:#4ade80;border:1px solid #25d366;border-radius:10px;padding:10px 16px;font:600 13px Cairo,Tahoma,sans-serif;direction:rtl;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:90vw;';
+            document.body.appendChild(b);
+        }
+        b.textContent = txt; b.style.display = txt ? 'block' : 'none';
+    }
+    async function waStatus() {
+        try { const r = await fetch(WA_SERVER + '/status', { signal: AbortSignal.timeout(2000) }); return await r.json(); }
+        catch (e) { return null; }
+    }
+    function waEta(n) { return Math.ceil((n * 20 + Math.floor(n / 10) * 60) / 60); }
+    async function waQueue(messages) {
+        await fetch(WA_SERVER + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages }) });
+        clearInterval(_waPoll);
+        _waPoll = setInterval(async () => {
+            const s = await waStatus();
+            if (!s) { clearInterval(_waPoll); waBar(''); return; }
+            let t = `📤 ${s.sent + s.failed} / ${s.total} — تم: ${s.sent} | فشل: ${s.failed}`;
+            if (s.current) t += ` — بيبعت: ${s.current}`;
+            if (s.pauseUntil) t += ` — استراحة ${Math.ceil((s.pauseUntil - Date.now()) / 1000)} ث`;
+            waBar(t);
+            if (s.pending === 0 && !s.current) {
+                clearInterval(_waPoll);
+                waBar(`✅ خلص — تم: ${s.sent} | فشل: ${s.failed}` + (s.failedList.length ? ' (' + s.failedList.map(f => f.name).join('، ') + ')' : ''));
+                setTimeout(() => waBar(''), 20000);
+            }
+        }, 3000);
+    }
+    
+    let _msgStudentName = '';
+
+    async function sendOverdueWhatsApp() {
+        const overdue = students.filter(s => (s.subscriptionPrice - s.paid) > 0);
+        const targets = overdue.filter(s => s.phone);
+        const noPhone = overdue.length - targets.length;
+        if (!targets.length) { showAlert('مفيش متأخرين عندهم أرقام محفوظة', 'danger'); return; }
+        const st = await waStatus();
+        if (!st)       { showAlert('سيرفر الإرسال مش شغال — شغّل start.bat', 'danger'); return; }
+        if (!st.ready) { showAlert('واتساب مش مربوط — امسح الـ QR في نافذة السيرفر', 'danger'); return; }
+        if (!confirm(`هيتبعت تذكير لـ ${targets.length} ولي أمر (حوالي ${waEta(targets.length)} دقيقة)` + (noPhone ? `\n${noPhone} متأخر ملهمش رقم محفوظ` : '') + '\nمتابعة؟')) return;
+        await waQueue(targets.map(s => ({ name: s.name, phone: s.phone, text: buildMessage(s) })));
+    }
+
+    async function sendWhatsApp() {
         const text  = document.getElementById('messageText').value.trim();
         let phone   = document.getElementById('parentPhone').value.trim().replace(/\D/g, '');
         if (phone.startsWith('0')) phone = '2' + phone;
         const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+        const rawPhone = document.getElementById('parentPhone').value.trim();
+        const st = await waStatus();
+        if (st && st.ready && rawPhone) {
+            await waQueue([{ name: _msgStudentName || rawPhone, phone: rawPhone, text }]);
+            showAlert('📤 اتحطت في طابور الإرسال');
+            closeModal('messageModal');
+            return;
+        }
+        if (st && !st.ready) showAlert('واتساب مش مربوط في السيرفر — هيتفتح واتساب يدوي', 'danger');
         window.open(url, '_blank');
     }
 
@@ -986,6 +1047,7 @@
     window.closeModal         = closeModal;
     window.showMessageModal   = showMessageModal;
     window.sendWhatsApp       = sendWhatsApp;
+    window.sendOverdueWhatsApp = sendOverdueWhatsApp;
     window.copyMessage        = copyMessage;
     window.showHistoryModal   = showHistoryModal;
     window.toggleMonthDetails = toggleMonthDetails;

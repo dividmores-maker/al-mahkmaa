@@ -16,6 +16,8 @@
     messagingSenderId: "621299576828",
     appId: "1:621299576828:web:e6bbeb87473a36ebb2cc79"
 };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
     </script>
 
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@700;900&display=swap" rel="stylesheet">
@@ -632,6 +634,7 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn btn-green btn-sm" onclick="saveAll()">💾 حفظ الكل</button>
                 <button class="btn btn-navy btn-sm"  onclick="openReport()">📊 تقرير</button>
+                <button class="btn btn-green btn-sm" onclick="sendAllToParents()">📤 إرسال للجميع</button>
                 <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ طباعة</button>
                 <button class="btn btn-ghost btn-sm" onclick="goExams()">← رجوع</button>
             </div>
@@ -1356,7 +1359,50 @@ function savePhone(stId) {
     if (val) toast('تم حفظ رقم ولي الأمر ✔');
 }
 
-function sendToParent(stId) {
+
+// ══ إرسال واتساب تلقائي عن طريق السيرفر المحلي (wa-sender) ══
+const WA_SERVER = 'http://localhost:3001';
+let _waPoll = null;
+function waBar(txt) {
+    let b = document.getElementById('waBar');
+    if (!b) {
+        b = document.createElement('div'); b.id = 'waBar';
+        b.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:99999;background:#0f172a;color:#4ade80;border:1px solid #25d366;border-radius:10px;padding:10px 16px;font:600 13px Cairo,Tahoma,sans-serif;direction:rtl;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:90vw;';
+        document.body.appendChild(b);
+    }
+    b.textContent = txt; b.style.display = txt ? 'block' : 'none';
+}
+async function waStatus() {
+    try { const r = await fetch(WA_SERVER + '/status', { signal: AbortSignal.timeout(2000) }); return await r.json(); }
+    catch (e) { return null; }
+}
+function waEta(n) { return Math.ceil((n * 20 + Math.floor(n / 10) * 60) / 60); }
+async function waQueue(messages) {
+    await fetch(WA_SERVER + '/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages }) });
+    clearInterval(_waPoll);
+    _waPoll = setInterval(async () => {
+        const s = await waStatus();
+        if (!s) { clearInterval(_waPoll); waBar(''); return; }
+        let t = `📤 ${s.sent + s.failed} / ${s.total} — تم: ${s.sent} | فشل: ${s.failed}`;
+        if (s.current) t += ` — بيبعت: ${s.current}`;
+        if (s.pauseUntil) t += ` — استراحة ${Math.ceil((s.pauseUntil - Date.now()) / 1000)} ث`;
+        waBar(t);
+        if (s.pending === 0 && !s.current) {
+            clearInterval(_waPoll);
+            waBar(`✅ خلص — تم: ${s.sent} | فشل: ${s.failed}` + (s.failedList.length ? ' (' + s.failedList.map(f => f.name).join('، ') + ')' : ''));
+            setTimeout(() => waBar(''), 20000);
+        }
+    }, 3000);
+}
+
+function buildGradeMsg(st, exam, sess, score, note) {
+    const pct = Math.round((parseFloat(score) / exam.max) * 100);
+    const ltr = letterGrade(parseFloat(score), exam.max, exam.pass || 50);
+    const gradeLabels = { A:'ممتاز', B:'جيد جداً', C:'جيد', D:'مقبول', F:'ضعيف' };
+    return `مرحباً ولي أمر الطالب/ة: ${st.name}\n\nنتيجة الامتحان:\n📚 المادة: ${sess?.subject || ''}\n📝 الامتحان: ${exam.name}\n✏️ الدرجة: ${score} / ${exam.max}\n📊 النسبة: ${pct}%\n🏅 التقدير: ${gradeLabels[ltr]||ltr}${note ? '\n📌 ملاحظة: ' + note : ''}\n\nمع تحياتنا`;
+}
+
+async function sendToParent(stId) {
     const exam = (examsData[curSessId] || []).find(e => e.id === curExamId);
     const sess = allSessions.find(s => s.sid === curSessId);
     const students = studentsMap[curSessId] || [];
@@ -1367,15 +1413,43 @@ function sendToParent(stId) {
     const scoreInp = document.getElementById(`sc-${stId}`);
     const score = scoreInp ? scoreInp.value : '';
     if (score === '' || isNaN(parseFloat(score))) { toast('❌ لم يتم إدخال الدرجة بعد', 'danger'); return; }
-    const pct  = Math.round((parseFloat(score) / exam.max) * 100);
-    const ltr  = letterGrade(parseFloat(score), exam.max, exam.pass || 50);
     const note = (document.getElementById(`nt-${stId}`) || {}).value || '';
-    const gradeLabels = { A:'ممتاز', B:'جيد جداً', C:'جيد', D:'مقبول', F:'ضعيف' };
-    const msg = `مرحباً ولي أمر الطالب/ة: ${st.name}\n\nنتيجة الامتحان:\n📚 المادة: ${sess?.subject || ''}\n📝 الامتحان: ${exam.name}\n✏️ الدرجة: ${score} / ${exam.max}\n📊 النسبة: ${pct}%\n🏅 التقدير: ${gradeLabels[ltr]||ltr}${note ? '\n📌 ملاحظة: ' + note : ''}\n\nمع تحياتنا`;
+    const msg = buildGradeMsg(st, exam, sess, score, note);
+
+    const sv = await waStatus();
+    if (sv && sv.ready) {
+        await waQueue([{ name: st.name, phone: phone.trim(), text: msg }]);
+        toast('اتحطت في طابور الإرسال 📤');
+        return;
+    }
+    if (sv && !sv.ready) toast('واتساب مش مربوط في السيرفر — هيتفتح واتساب يدوي', 'danger');
+
     let normalized = phone.replace(/[\s\-()]/g, '');
     if (normalized.startsWith('0')) normalized = '966' + normalized.slice(1);
     if (!normalized.startsWith('+')) normalized = '+' + normalized;
     window.open(`https://wa.me/${normalized.replace('+','')}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+async function sendAllToParents() {
+    const exam = (examsData[curSessId] || []).find(e => e.id === curExamId);
+    const sess = allSessions.find(s => s.sid === curSessId);
+    const students = studentsMap[curSessId] || [];
+    if (!exam) return;
+    const msgs = []; let noPhone = 0, noScore = 0;
+    students.forEach(st => {
+        const score = (document.getElementById(`sc-${st.id}`) || {}).value ?? '';
+        if (score === '' || isNaN(parseFloat(score))) { noScore++; return; }
+        const phone = ((document.getElementById(`ph-${st.id}`) || {}).value || parentPhones[String(st.id)] || '').trim();
+        if (!phone) { noPhone++; return; }
+        const note = (document.getElementById(`nt-${st.id}`) || {}).value || '';
+        msgs.push({ name: st.name, phone, text: buildGradeMsg(st, exam, sess, score, note) });
+    });
+    if (!msgs.length) { toast('❌ مفيش طلاب ليهم درجة ورقم ولي أمر', 'danger'); return; }
+    const sv = await waStatus();
+    if (!sv)       { toast('❌ سيرفر الإرسال مش شغال — شغّل start.bat', 'danger'); return; }
+    if (!sv.ready) { toast('❌ واتساب مش مربوط — امسح الـ QR في نافذة السيرفر', 'danger'); return; }
+    if (!confirm(`هيتبعت ${msgs.length} نتيجة (حوالي ${waEta(msgs.length)} دقيقة)` + (noScore ? `\n${noScore} طالب بدون درجة` : '') + (noPhone ? `\n${noPhone} طالب بدون رقم` : '') + '\nمتابعة؟')) return;
+    await waQueue(msgs);
 }
 
 /* ── Init ── */
