@@ -529,9 +529,40 @@
             .footer { flex-direction: column; align-items: flex-start; }
             .stat-trend { display: none; }
         }
+    
+        /* ── Rules Gate ── */
+        #rulesGate { position: fixed; inset: 0; z-index: 99999; background: #0d0014; display: none; align-items: center; justify-content: center; padding: 20px; font-family: 'Cairo', sans-serif; }
+        #rulesGate.show { display: flex; }
+        .rules-box { width: 100%; max-width: 520px; background: #12001f; border: 1px solid rgba(168,85,247,.35); border-radius: 20px; padding: 28px 26px; box-shadow: 0 0 60px rgba(124,58,237,.25); color: #fff; }
+        .rules-box h2 { font-size: 22px; font-weight: 800; color: #c084fc; margin-bottom: 18px; text-align: center; }
+        .rules-box ol { padding-right: 22px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
+        .rules-box li { font-size: 15px; line-height: 1.8; color: rgba(255,255,255,.9); }
+        .rules-check { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.05); cursor: pointer; margin-bottom: 16px; font-size: 15px; font-weight: 600; }
+        .rules-check input { width: 20px; height: 20px; accent-color: #a855f7; cursor: pointer; }
+        .rules-btn { width: 100%; padding: 13px; border: none; border-radius: 12px; font-family: inherit; font-size: 16px; font-weight: 700; color: #fff; background: linear-gradient(135deg,#7c3aed,#a855f7); cursor: pointer; transition: opacity .2s; }
+        .rules-btn:disabled { opacity: .35; cursor: not-allowed; }
     </style>
 </head>
 <body>
+
+<!-- ── Rules Gate ── -->
+<div id="rulesGate">
+    <div class="rules-box">
+        <h2>⚠️ تعليمات الاستخدام</h2>
+        <ol>
+            <li>عدم استخدام البرنامج بدون إنترنت.</li>
+            <li>عدم فتح البرنامج أكثر من مرة وهو يعمل.</li>
+            <li>عدم إرسال رسائل الواتس لمجموعتين في نفس الوقت لعدم حدوث حظر للخط.</li>
+            <li>التأكد من أن التاريخ والوقت صحيحين على الجهاز لعدم حذف البيانات الموجودة.</li>
+        </ol>
+        <label class="rules-check">
+            <input type="checkbox" id="rulesCheck" onchange="document.getElementById('rulesSave').disabled = !this.checked">
+            <span>قرأت جميع التعليمات</span>
+        </label>
+        <button class="rules-btn" id="rulesSave" disabled onclick="acceptRules()">حفظ</button>
+    </div>
+</div>
+
 
 <!-- ── Background ── -->
 <div class="bg">
@@ -1138,12 +1169,24 @@
         // Comment out for preview
         // const isLoggedIn = sessionStorage.getItem('isLoggedIn');
         // if (isLoggedIn !== 'true') window.location.href = 'login.html';
+        if (sessionStorage.getItem('rulesAccepted') !== 'true') {
+            document.getElementById('rulesGate').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
         startClock();
     };
+
+    function acceptRules() {
+        if (!document.getElementById('rulesCheck').checked) return;
+        sessionStorage.setItem('rulesAccepted', 'true');
+        document.getElementById('rulesGate').classList.remove('show');
+        document.body.style.overflow = '';
+    }
 
     function logout() {
         sessionStorage.removeItem('isLoggedIn');
         sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('rulesAccepted');
         window.location.href = 'login.html';
     }
 
