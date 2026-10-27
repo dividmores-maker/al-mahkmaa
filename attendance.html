@@ -1844,6 +1844,7 @@
                 });
             }
             matches = matches.filter(st => !alreadyIds.has(String(st.id)));
+            matches.sort((a, b) => String(a.name || '').trim().localeCompare(String(b.name || '').trim(), 'ar'));
 
             if (matches.length === 0) {
                 listEl.innerHTML = `<div style="text-align:center;padding:20px;color:rgba(255,255,255,.4);font-size:13px;">
